@@ -1,6 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Module defining quantities.
+"""
 
 QUANTITY_SPACE_INFLOW = ("0", "+")
 QUANTITY_SPACE_OUTFLOW = QUANTITY_SPACE_VOLUME = ("0", "+", "max")
+QUANTITY_SPACE_DERIVATIVE = ("-", "0", "+")
 
 QUANTITY_SPACES = {
     "inflow": QUANTITY_SPACE_INFLOW,
@@ -13,7 +18,6 @@ class Quantifiable:
     """
     Class to model a magnitude or a derivative.
     """
-
     def __init__(self, value, quantity_space):
         self.value = value
         self.quantity_space = quantity_space
@@ -48,7 +52,9 @@ class Quantifiable:
 
 
 class FrozenQuantifiable(Quantifiable):
-
+    """
+    Quantifiable that has an immutable value.
+    """
     def __setattr__(self, key, value):
         if key == "value":
             raise KeyError("Cannot set value for an immutable quantity.")
@@ -66,18 +72,21 @@ class Quantity:
         assert model in QUANTITY_SPACES.keys(), "Unknown model"
         self.quantity_space = QUANTITY_SPACES[model]
         assert magnitude in self.quantity_space, "Invalid value for magnitude: {}".format(magnitude)
-        assert derivative in self.quantity_space, "Invalid value for derivative: {}".format(derivative)
+        assert derivative in QUANTITY_SPACE_DERIVATIVE, "Invalid value for derivative: {}".format(derivative)
         self.init_quantifiables(magnitude, derivative)
 
     def init_quantifiables(self, magnitude, derivative):
         # Wrap magnitude and derivative in Quantifiables for neat addition / subtraction functionalities
         self.magnitude = Quantifiable(value=magnitude, quantity_space=self.quantity_space)
-        self.derivative = Quantifiable(value=derivative, quantity_space=self.quantity_space)
+        self.derivative = Quantifiable(value=derivative, quantity_space=QUANTITY_SPACE_DERIVATIVE)
 
 
 class FrozenQuantity(Quantity):
+    """
+    Quantity that is immutable.
+    """
     def init_quantifiables(self, magnitude, derivative):
         # Wrap magnitude and derivative in Quantifiables for neat addition / subtraction functionalities
         self.magnitude = FrozenQuantifiable(value=magnitude, quantity_space=self.quantity_space)
-        self.derivative = FrozenQuantifiable(value=derivative, quantity_space=self.quantity_space)
+        self.derivative = FrozenQuantifiable(value=derivative, quantity_space=QUANTITY_SPACE_DERIVATIVE)
 
