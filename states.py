@@ -3,17 +3,24 @@
 Module defining the state graph.
 """
 
+# STD
+import abc
+import copy
+
+# PROJECT
+from quantities import QUANTITY_SPACES, Quantity
+
 # CONST
-from quantities import QUANTITY_SPACES, Quantity, FrozenQuantity
-
-ENTITY_SPACES = {
-    "tap": QUANTITY_SPACES,
-    "drain": QUANTITY_SPACES,
-    "sink": QUANTITY_SPACES
-}
-
 QUANTITY_RELATIONSHIPS = {
-    "I+", "I-", "P+", "P-", "VC_max", "VC_0"
+    "I+",
+    "I-",
+    "P+",
+    "P-",
+    "VC_max",
+    "VC_0",
+    "C+",       # A positive derivative will increment the magnitude of the same quantity
+    "C-"        # A negative derivative will decrement the magnitude of the same quantity
+
 }
 
 
@@ -73,37 +80,18 @@ class StateGraph:
 
 
 class State:
-    # Contains:
-    # Tap
-        # Quantities
-            # Inflow
-    # Drain
-        # Quantities
-            # Outflow
-    # Sink
-        # Quantities
-            # Volume
-    pass
+    """
+    Class to model a state in the state graph.
+    """
+    def __init__(self, rules, **entities):
+        self.rules = rules
+        vars(self).update(entities)
 
+    def apply_rules(self):
+        branches = []
 
-class Entity:
-    # has:
-        # quantities
-        # dependencies
-
-    def __init__(self, dependencies, **quantities):
-        self.dependencies = dependencies
-        self.__dict__.update(quantities)
-        #vars(self).update(quantities)
-
-
-
-class Container(Entity):
-    pass
-
-
-class Drain(Entity):
-    pass
+        for rule in self.rules:
+            branches.append(rule.apply(self))
 
 
 class Relationship:
@@ -114,6 +102,26 @@ class Relationship:
         self.quantity1 = quantity1
         self.quantity2 = quantity2
         self.relation = relation
+
+    @abc.abstractmethod
+    def apply(self, state):
+        pass
+
+
+class Consequence(Relationship):
+    def __init__(self, quantity, relation):
+        super().__init__(quantity, quantity, relation)
+
+
+class PositiveConsequence(Consequence):
+    def __init__(self, quantity):
+        super().__init__(quantity, "C+")
+
+    def apply(self, state):
+        if self.quantity1.derivative == "+" and not self.quantity1.magnitude.is_max:
+            new_state = copy.copy(state)
+            new_state.magnitude += 1
+            return self.relation, new_state
 
 
 class ValueCorrespondence(Relationship):
@@ -132,8 +140,4 @@ class ValueCorrespondence(Relationship):
 
 
 if __name__ == "__main__":
-    quant1 = Quantity(model="outflow", magnitude="max")
-    quant2 = Quantity(model="outflow", magnitude="max")
-
-    vc_max = ValueCorrespondence(quantity1=quant1, magnitude1="max", quantity2=quant2, magnitude2="max")
-    print(vc_max.check_correspondence())
+   rules = []

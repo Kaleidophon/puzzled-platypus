@@ -27,6 +27,12 @@ class Quantifiable:
         self.space_ceil = len(quantity_space) - 1
         self.value_index = quantity_space.index(value)
 
+    def is_max(self):
+        return self.value_index == self.space_ceil
+
+    def is_min(self):
+        return self.value_index == 0
+
     def __add__(self, other):
         assert other == 1, "You can only add one to a quantifiable."
 
@@ -78,6 +84,7 @@ class Quantity:
 
     def __init__(self, model, magnitude="0", derivative="0"):
         assert model in QUANTITY_SPACES.keys(), "Unknown model"
+        self.model = model
         self.quantity_space = QUANTITY_SPACES[model]
         assert magnitude in self.quantity_space, "Invalid value for magnitude: {}".format(magnitude)
         assert derivative in QUANTITY_SPACE_DERIVATIVE, "Invalid value for derivative: {}".format(derivative)
@@ -87,6 +94,9 @@ class Quantity:
         # Wrap magnitude and derivative in Quantifiables for neat addition / subtraction functionalities
         self.magnitude = Quantifiable(value=magnitude, quantity_space=self.quantity_space)
         self.derivative = Quantifiable(value=derivative, quantity_space=QUANTITY_SPACE_DERIVATIVE)
+
+    def __copy__(self):
+        return Quantity(self.model, str(self.magnitude), str(self.derivative))
 
 
 class FrozenQuantity(Quantity):
