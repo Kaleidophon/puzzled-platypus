@@ -3,8 +3,21 @@
 Module defining the state graph.
 """
 
-# PROJECT
-from quantities import Quantity, FrozenQuantity
+# CONST
+from quantities import QUANTITY_SPACES, Quantity, FrozenQuantity
+
+ENTITY_SPACES = {
+    "tap": QUANTITY_SPACES,
+    "drain": QUANTITY_SPACES,
+    "sink": QUANTITY_SPACES
+}
+
+QUANTITY_RELATIONSHIPS = {
+    "I+": (QUANTITY_SPACES, QUANTITY_SPACES),
+    "I-": (QUANTITY_SPACES, QUANTITY_SPACES),
+    "P+": (QUANTITY_SPACES, QUANTITY_SPACES),
+    "P-": (QUANTITY_SPACES, QUANTITY_SPACES)
+}
 
 
 class StateGraph:
@@ -59,30 +72,7 @@ class StateGraph:
     #  - dependencies (I+, I-, ...)
     #  - implications (M:0, D:+ -> M:+, D:+)
     #  - influence (turn up / down tap)
-
-class Rule:
-    def __init__(self, entity1, entity2):
-        #assert type(entity1) == Entity and type(entity2) == Entity
-        self.entity1 = entity1
-        self.entity2 = entity2
-
-    def apply(self):
-        """
-        Check whether a rule applies to the current circumstances.
-        """
-        pass
-
-
-
-class VC(Rule):
-    def apply(self):
-        if self.entity2.volume.magnitude == "max":
-            if self.entity1.volume.magnitude == "max":
-                return True
-            else:
-                return False
-        return False
-
+    pass
 
 
 class State:
@@ -119,6 +109,31 @@ class Drain(Entity):
     pass
 
 
+class Relationship:
+
+    def __init__(self, quantity1, quantity2, relation):
+        assert quantity1 in QUANTITY_SPACES.keys(), "Unknown quantity"
+        assert quantity2 in QUANTITY_SPACES.keys(), "Unknown quantity"
+        assert relation in QUANTITY_RELATIONSHIPS.keys(), "Unknown relationship"
+        self.quantity1 = quantity1
+        self.quantity2 = quantity2
+        self.relation = relation
+
+
+class ValueCorrespondence(Relationship):
+
+    def __init__(self, quantity1, magnitude1, quantity2, magnitude2):
+        super().__init__(quantity1, quantity2, relation="constraint")
+        assert magnitude1 in quantity1.quantity_space, "Invalid value for magnitude: {}".format(magnitude1)
+        assert magnitude2 in quantity2.quantity_space, "Invalid value for magnitude: {}".format(magnitude2)
+        self.magnitude1 = magnitude1
+        self.magnitude2 = magnitude2
+
+    def check_correspondence(self):
+        if self.quantity2.magnitude == self.magnitude2:
+            assert self.quantity1.magnitude == self.magnitude1, "VC Condition failure"
+
+
 if __name__ == "__main__":
     container = Container(
         dependencies=[],
@@ -128,8 +143,5 @@ if __name__ == "__main__":
         dependencies=[],
         volume=Quantity(model="outflow", magnitude="max")
     )
-    vc = VC(container, drain)
-    print(vc.apply())
-    #print(container.pressure)
 
-
+    vc_max = ValueCorrespondence()

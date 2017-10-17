@@ -4,13 +4,16 @@ Module defining quantities.
 """
 
 QUANTITY_SPACE_INFLOW = ("0", "+")
-QUANTITY_SPACE_OUTFLOW = QUANTITY_SPACE_VOLUME = ("0", "+", "max")
+QUANTITY_SPACE_OUTFLOW = QUANTITY_SPACE_VOLUME = QUANTITY_SPACE_PRESSURE =\
+                         QUANTITY_SPACE_HEIGHT = ("0", "+", "max")
 QUANTITY_SPACE_DERIVATIVE = ("-", "0", "+")
 
 QUANTITY_SPACES = {
     "inflow": QUANTITY_SPACE_INFLOW,
     "outflow": QUANTITY_SPACE_OUTFLOW,
-    "volume": QUANTITY_SPACE_VOLUME
+    "volume": QUANTITY_SPACE_VOLUME,
+    "pressure": QUANTITY_SPACE_PRESSURE,
+    "height": QUANTITY_SPACE_HEIGHT
 }
 
 
