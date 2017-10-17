@@ -19,6 +19,7 @@ QUANTITY_RELATIONSHIPS = {
     "P-": (QUANTITY_SPACES, QUANTITY_SPACES)
 }
 
+
 class StateGraph:
     # has:
     # states
@@ -58,11 +59,8 @@ class Entity:
 
 
 class Relationship:
-    quantity1 = None
-    quantity2 = None
-    relation = None
 
-    def __init__(self, quantity1, quanity2, relation):
+    def __init__(self, quantity1, quantity2, relation):
         assert quantity1 in QUANTITY_SPACES.keys(), "Unknown quantity"
         assert quantity2 in QUANTITY_SPACES.keys(), "Unknown quantity"
         assert relation in QUANTITY_RELATIONSHIPS.keys(), "Unknown relationship"
@@ -70,20 +68,16 @@ class Relationship:
         self.quantity2 = quantity2
         self.relation = relation
 
+
 class VC(Relationship):
-    magnitude1 = None
-    magnitude2 = None
 
     def __init__(self, quantity1, magnitude1, quantity2, magnitude2):
-        assert quantity1 in QUANTITY_SPACES.keys(), "Unknown quantity"
-        assert quantity2 in QUANTITY_SPACES.keys(), "Unknown quantity"
+        super().__init__(quantity1, quantity2, relation="constraint")
         assert magnitude1 in quantity1.quantity_space, "Invalid value for magnitude: {}".format(magnitude1)
         assert magnitude2 in quantity2.quantity_space, "Invalid value for magnitude: {}".format(magnitude2)
-        self.quantity1 = quantity1
-        self.quantity2 = quantity2
         self.magnitude1 = magnitude1
         self.magnitude2 = magnitude2
 
-    def Check_VC():
-        if(self.quantity2.magnitude == self.magnitude2):
+    def check_VC(self):
+        if self.quantity2.magnitude == self.magnitude2:
             assert self.quantity1.magnitude == self.magnitude1, "VC Condition failure"
