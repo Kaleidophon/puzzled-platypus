@@ -11,7 +11,9 @@ from states import (
     State,
     ValueCorrespondence,
     PositiveConsequence,
-    NegativeConsequence
+    NegativeConsequence,
+    PositiveAction,
+    NegativeAction
 )
 
 
@@ -22,7 +24,7 @@ def main():
 
 def init_state_graph():
     # Construct tap
-    inflow = Quantity("inflow", derivative="-", magnitude="+")
+    inflow = Quantity("inflow")
     tap = Tap(inflow=inflow)
 
     # Construct container
@@ -38,7 +40,9 @@ def init_state_graph():
     # Set up rules
     rules = [
         PositiveConsequence(tap.inflow),
-        NegativeConsequence(tap.inflow)
+        NegativeConsequence(tap.inflow),
+        PositiveAction(tap.inflow),
+        NegativeAction(tap.inflow)
         #PositiveConsequence(volume),
         #PositiveConsequence(height),
         #PositiveConsequence(pressure),

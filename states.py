@@ -19,7 +19,9 @@ QUANTITY_RELATIONSHIPS = {
     "VC_max",
     "VC_0",
     "C+",       # A positive derivative will increment the magnitude of the same quantity
-    "C-"        # A negative derivative will decrement the magnitude of the same quantity
+    "C-",       # A negative derivative will decrement the magnitude of the same quantity
+    "A+",       # Open tap
+    "A-"        # Close tap
 
 }
 
@@ -125,13 +127,17 @@ class Relationship:
         pass
 
 
-class Consequence(Relationship):
+class Reflexive(Relationship):
     def __init__(self, quantity, relation):
         self.quantity = quantity
         super().__init__(quantity, quantity, relation)
 
+    @abc.abstractmethod
+    def apply(self, state):
+        pass
 
-class PositiveConsequence(Consequence):
+
+class PositiveConsequence(Reflexive):
     def __init__(self, quantity):
         super().__init__(quantity, "C+")
 
@@ -142,7 +148,7 @@ class PositiveConsequence(Consequence):
             return self.relation, new_state
 
 
-class NegativeConsequence(Consequence):
+class NegativeConsequence(Reflexive):
     def __init__(self, quantity):
         super().__init__(quantity, "C-")
 
@@ -150,6 +156,28 @@ class NegativeConsequence(Consequence):
         if self.quantity.derivative == "-" and not self.quantity.magnitude.is_min():
             new_state = copy.copy(state)
             self.quantity.magnitude -= 1
+            return self.relation, new_state
+
+
+class PositiveAction(Reflexive):
+    def __init__(self, quantity):
+        super().__init__(quantity, "A+")
+
+    def apply(self, state):
+        if not self.quantity.derivative.is_max():
+            new_state = copy.copy(state)
+            self.quantity.derivative += 1
+            return self.relation, new_state
+
+
+class NegativeAction(Reflexive):
+    def __init__(self, quantity):
+        super().__init__(quantity, "A-")
+
+    def apply(self, state):
+        if not self.quantity.derivative.is_min():
+            new_state = copy.copy(state)
+            self.quantity.derivative -= 1
             return self.relation, new_state
 
 
