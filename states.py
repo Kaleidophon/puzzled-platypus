@@ -35,35 +35,38 @@ class StateGraph:
         self.initial_state = initial_state
         self.rules = rules
 
-    def generate(self):
+    def envision(self):
         if not (self.states or self.transitions):
-            self.states, self.transitions = self._generate()
+            self.states, self.transitions = self._envision()
         return self.states, self.transitions
 
-    def _generate(self):
+    def _envision(self):
         states = {}
         transitions = {}
         state_stack = [self.initial_state]
 
         while len(state_stack) != 0:
             current_state = state_stack.pop(0)
-            branches = current_state.apply_rules(states)
+            branches = current_state.apply_rules(self.rules)
+            branches = [branch for branch in branches if branch is not None]
 
             for rule, new_state in branches:
-                states[new_state.id] = new_state
-                transitions[(current_state.id, rule)] = new_state
+                states[new_state] = new_state
+                transitions[(current_state.readable_id, rule)] = new_state
+                print("New state through rule {}: {}".format(rule, new_state.readable_id))
+                state_stack.append(new_state)
 
         return states, transitions
 
     @property
     def edges(self):
-        states, _ = self.generate()
+        states, _ = self.envision()
         return states
 
     @property
     def nodes(self):
-        self.generate()
-        _, transitions = self.generate()
+        self.envision()
+        _, transitions = self.envision()
         return transitions
 
     # has:
@@ -83,15 +86,29 @@ class State:
     """
     Class to model a state in the state graph.
     """
-    def __init__(self, rules, **entities):
-        self.rules = rules
+    def __init__(self, **entities):
+        self.entities = list(entities.values())
         vars(self).update(entities)
 
-    def apply_rules(self):
-        branches = []
+    def __repr__(self):
+        return "<State: {}>".format(self.readable_id)
 
-        for rule in self.rules:
-            branches.append(rule.apply(self))
+    @property
+    def readable_id(self):
+        return "|".join(
+            [
+                ";".join(
+                    [
+                        "{} {}".format(str(quantity.magnitude), str(quantity.derivative))
+                        for quantity in entity.quantities
+                    ]
+                )
+                for entity in self.entities
+            ]
+        )
+
+    def apply_rules(self, rules):
+        return [rule.apply(self) for rule in rules]
 
 
 class Relationship:
@@ -110,6 +127,7 @@ class Relationship:
 
 class Consequence(Relationship):
     def __init__(self, quantity, relation):
+        self.quantity = quantity
         super().__init__(quantity, quantity, relation)
 
 
@@ -118,9 +136,20 @@ class PositiveConsequence(Consequence):
         super().__init__(quantity, "C+")
 
     def apply(self, state):
-        if self.quantity1.derivative == "+" and not self.quantity1.magnitude.is_max:
+        if self.quantity.derivative == "+" and not self.quantity.magnitude.is_max():
             new_state = copy.copy(state)
-            new_state.magnitude += 1
+            self.quantity.magnitude += 1
+            return self.relation, new_state
+
+
+class NegativeConsequence(Consequence):
+    def __init__(self, quantity):
+        super().__init__(quantity, "C-")
+
+    def apply(self, state):
+        if self.quantity.derivative == "-" and not self.quantity.magnitude.is_min():
+            new_state = copy.copy(state)
+            self.quantity.magnitude -= 1
             return self.relation, new_state
 
 

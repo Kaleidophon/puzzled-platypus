@@ -98,6 +98,9 @@ class Quantity:
     def __copy__(self):
         return Quantity(self.model, str(self.magnitude), str(self.derivative))
 
+    def __str__(self):
+        return "{}, {}".format(self.magnitude, self.derivative)
+
 
 class FrozenQuantity(Quantity):
     """
