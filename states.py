@@ -69,7 +69,7 @@ class Relationship:
         self.relation = relation
 
 
-class VC(Relationship):
+class ValueCorrespondence(Relationship):
 
     def __init__(self, quantity1, magnitude1, quantity2, magnitude2):
         super().__init__(quantity1, quantity2, relation="constraint")
@@ -78,6 +78,12 @@ class VC(Relationship):
         self.magnitude1 = magnitude1
         self.magnitude2 = magnitude2
 
-    def check_VC(self):
+    def check_correspondence(self):
         if self.quantity2.magnitude == self.magnitude2:
             assert self.quantity1.magnitude == self.magnitude1, "VC Condition failure"
+
+
+if __name__ == "__main__":
+
+
+    vc_max = ValueCorrespondence()
