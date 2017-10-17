@@ -60,6 +60,30 @@ class StateGraph:
     #  - implications (M:0, D:+ -> M:+, D:+)
     #  - influence (turn up / down tap)
 
+class Rule:
+    def __init__(self, entity1, entity2):
+        #assert type(entity1) == Entity and type(entity2) == Entity
+        self.entity1 = entity1
+        self.entity2 = entity2
+
+    def apply(self):
+        """
+        Check whether a rule applies to the current circumstances.
+        """
+        pass
+
+
+
+class VC(Rule):
+    def apply(self):
+        if self.entity2.volume.magnitude == "max":
+            if self.entity1.volume.magnitude == "max":
+                return True
+            else:
+                return False
+        return False
+
+
 
 class State:
     # Contains:
@@ -79,6 +103,33 @@ class Entity:
     # has:
         # quantities
         # dependencies
+
+    def __init__(self, dependencies, **quantities):
+        self.dependencies = dependencies
+        self.__dict__.update(quantities)
+        #vars(self).update(quantities)
+
+
+
+class Container(Entity):
     pass
+
+
+class Drain(Entity):
+    pass
+
+
+if __name__ == "__main__":
+    container = Container(
+        dependencies=[],
+        volume=Quantity(model="outflow", magnitude="+")
+    )
+    drain = Drain(
+        dependencies=[],
+        volume=Quantity(model="outflow", magnitude="max")
+    )
+    vc = VC(container, drain)
+    print(vc.apply())
+    #print(container.pressure)
 
 
