@@ -21,6 +21,47 @@ QUANTITY_RELATIONSHIPS = {
 
 
 class StateGraph:
+    """
+    Class to model a state graph, i.e. a graph with states as nodes and transitions between those same nodes as edges.
+    """
+    states = None
+    transitions = None
+
+    def __init__(self, initial_state, rules):
+        self.initial_state = initial_state
+        self.rules = rules
+
+    def generate(self):
+        if not (self.states or self.transitions):
+            self.states, self.transitions = self._generate()
+        return self.states, self.transitions
+
+    def _generate(self):
+        states = {}
+        transitions = {}
+        state_stack = [self.initial_state]
+
+        while len(state_stack) != 0:
+            current_state = state_stack.pop(0)
+            branches = current_state.apply_rules(states)
+
+            for rule, new_state in branches:
+                states[new_state.id] = new_state
+                transitions[(current_state.id, rule)] = new_state
+
+        return states, transitions
+
+    @property
+    def edges(self):
+        states, _ = self.generate()
+        return states
+
+    @property
+    def nodes(self):
+        self.generate()
+        _, transitions = self.generate()
+        return transitions
+
     # has:
     # states
     # transitions
@@ -34,28 +75,38 @@ class StateGraph:
     pass
 
 
-#class State(Quantity, Relationship):
+class State:
     # Contains:
+    # Tap
+        # Quantities
+            # Inflow
+    # Drain
+        # Quantities
+            # Outflow
+    # Sink
+        # Quantities
+            # Volume
+    pass
 
-    #def __init__(previous_state):
-        #self.tap = Quantity("inflow", "0", "0")
-        #self.drain = Quantity("outflow", "0", "0")
-        #self.sink = Quantity("volume", "0", "0")
-        #self.sink = Quantity("pressure", "0", "0")
-        #self.sink = Quantity("height", "0", "0")
-        # Tap
-        # Drain
-        # Sink
 
 class Entity:
-    entity = None
+    # has:
+        # quantities
+        # dependencies
 
-    # quantities
-    def __init__(self, entity):
-        assert entity in ENTITY_SPACES.keys(), "Unknown entity"
-        self.entity = ENTITY_SPACES[entity]
- 
-    # dependencies
+    def __init__(self, dependencies, **quantities):
+        self.dependencies = dependencies
+        self.__dict__.update(quantities)
+        #vars(self).update(quantities)
+
+
+
+class Container(Entity):
+    pass
+
+
+class Drain(Entity):
+    pass
 
 
 class Relationship:
@@ -84,6 +135,13 @@ class ValueCorrespondence(Relationship):
 
 
 if __name__ == "__main__":
-
+    container = Container(
+        dependencies=[],
+        volume=Quantity(model="outflow", magnitude="+")
+    )
+    drain = Drain(
+        dependencies=[],
+        volume=Quantity(model="outflow", magnitude="max")
+    )
 
     vc_max = ValueCorrespondence()
