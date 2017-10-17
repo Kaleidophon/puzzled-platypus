@@ -13,10 +13,7 @@ ENTITY_SPACES = {
 }
 
 QUANTITY_RELATIONSHIPS = {
-    "I+": (QUANTITY_SPACES, QUANTITY_SPACES),
-    "I-": (QUANTITY_SPACES, QUANTITY_SPACES),
-    "P+": (QUANTITY_SPACES, QUANTITY_SPACES),
-    "P-": (QUANTITY_SPACES, QUANTITY_SPACES)
+    "I+", "I-", "P+", "P-", "VC_max", "VC_0"
 }
 
 
@@ -112,9 +109,8 @@ class Drain(Entity):
 class Relationship:
 
     def __init__(self, quantity1, quantity2, relation):
-        assert quantity1 in QUANTITY_SPACES.keys(), "Unknown quantity"
-        assert quantity2 in QUANTITY_SPACES.keys(), "Unknown quantity"
-        assert relation in QUANTITY_RELATIONSHIPS.keys(), "Unknown relationship"
+        assert type(quantity1) == Quantity and type(quantity2) == Quantity
+        assert relation in QUANTITY_RELATIONSHIPS, "Unknown relationship"
         self.quantity1 = quantity1
         self.quantity2 = quantity2
         self.relation = relation
@@ -122,8 +118,8 @@ class Relationship:
 
 class ValueCorrespondence(Relationship):
 
-    def __init__(self, quantity1, magnitude1, quantity2, magnitude2):
-        super().__init__(quantity1, quantity2, relation="constraint")
+    def __init__(self, quantity1, magnitude1, quantity2, magnitude2, constraint="VC_max"):
+        super().__init__(quantity1, quantity2, relation=constraint)
         assert magnitude1 in quantity1.quantity_space, "Invalid value for magnitude: {}".format(magnitude1)
         assert magnitude2 in quantity2.quantity_space, "Invalid value for magnitude: {}".format(magnitude2)
         self.magnitude1 = magnitude1
@@ -131,17 +127,13 @@ class ValueCorrespondence(Relationship):
 
     def check_correspondence(self):
         if self.quantity2.magnitude == self.magnitude2:
-            assert self.quantity1.magnitude == self.magnitude1, "VC Condition failure"
+            return self.quantity1.magnitude == self.magnitude1
+        return False
 
 
 if __name__ == "__main__":
-    container = Container(
-        dependencies=[],
-        volume=Quantity(model="outflow", magnitude="+")
-    )
-    drain = Drain(
-        dependencies=[],
-        volume=Quantity(model="outflow", magnitude="max")
-    )
+    quant1 = Quantity(model="outflow", magnitude="max")
+    quant2 = Quantity(model="outflow", magnitude="max")
 
-    vc_max = ValueCorrespondence()
+    vc_max = ValueCorrespondence(quantity1=quant1, magnitude1="max", quantity2=quant2, magnitude2="max")
+    print(vc_max.check_correspondence())

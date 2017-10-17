@@ -53,6 +53,11 @@ class Quantifiable:
     def __str__(self):
         return self.value
 
+    def __eq__(self, other):
+        if type(other) == str:
+            return str(self) == other
+        return self == other
+
 
 class FrozenQuantifiable(Quantifiable):
     """
