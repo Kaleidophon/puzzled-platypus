@@ -181,8 +181,67 @@ class NegativeAction(Reflexive):
             return self.relation, new_state
 
 
-class ValueCorrespondence(Relationship):
+class Influence(Relationship):
+    def __init__(self, quantity1, quantity2, relation):
+        self.quantity1 = quantity1
+        self.quantity2 = quantity2
+        super().__init__(quantity1, quantity2, relation)
 
+    @abc.abstractmethod
+    def apply(self, state):
+        pass
+
+
+class PositiveInfluence(Influence):
+    def __init__(self, quantity1, quantity2):
+        super().__init__(quantity1, quantity2, "I+")
+
+    def apply(self, state):
+        if self.quantity1.magnitude != "0" and not self.quantity2.magnitude.is_max():
+            new_state = copy.copy(state)
+            self.quantity2.magnitude += 1
+            return self.relation, new_state
+
+
+class NegativeInfluence(Influence):
+    def __init__(self, quantity1, quantity2):
+        super().__init__(quantity1, quantity2, "I-")
+
+    def apply(self, state):
+        if self.quantity1.magnitude != "0" and not self.quantity2.magnitude.is_min():
+            new_state = copy.copy(state)
+            self.quantity2.magnitude -= 1
+            return self.relation, new_state
+
+
+class Proportion(Relationship):
+    def __init__(self, quantity1, quantity2, relation):
+        self.quantity1 = quantity1
+        self.quantity2 = quantity2
+        super().__init__(quantity1, quantity2, relation)
+
+    @abc.abstractmethod
+    def apply(self, state):
+        pass
+
+
+class PositiveProportion(Proportion):
+    def __init__(self, quantity1, quantity2):
+        super().__init__(quantity1, quantity2, "P+")
+
+    def apply(self, state):
+        if self.quantity1.derivative == "+" and not self.quantity2.magnitude.is_max():
+            new_state = copy.copy(state)
+            self.quantity2.magnitude += 1
+            return self.relation, new_state
+
+        if self.quantity1.derivative == "-" and not self.quantity2.magnitude.is_min():
+            new_state = copy.copy(state)
+            self.quantity2.magnitude -= 1
+            return self.relation, new_state
+
+
+class ValueCorrespondence(Relationship):
     def __init__(self, quantity1, magnitude1, quantity2, magnitude2, constraint="VC_max"):
         super().__init__(quantity1, quantity2, relation=constraint)
         assert magnitude1 in quantity1.quantity_space, "Invalid value for magnitude: {}".format(magnitude1)
