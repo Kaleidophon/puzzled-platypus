@@ -35,19 +35,22 @@ class StateGraph:
         state_stack = [self.initial_state]
         discontinuities, constraints = 0, 0
 
-        if verbosity > 1:
-            print(
-                "{tspace}{tap:<4} | {cspace}{container:<16} | {drain} {relationship} {tap:>5}{tspace} | "
-                "{container:>16}{cspace} | {drain}".format(
-                    tap="tap", container="container", drain="drain", relationship="relationship",
-                    tspace=" "*2, cspace=" "*8
-                )
-            )
+        #if verbosity > 1:
+        #    print(
+        #        "{tspace}{tap:<4} | {cspace}{container:<16} | {drain} {relationship} {tap:>5}{tspace} | "
+        #        "{container:>16}{cspace} | {drain}".format(
+        #            tap="tap", container="container", drain="drain", relationship="relationship",
+        #            tspace=" "*2, cspace=" "*8
+        #        )
+        #    )
 
         while len(state_stack) != 0:
             current_state = state_stack.pop(0)
 
             current_state = self._apply_consequences(current_state)
+
+            if verbosity > 1:
+                print("Current state: {}".format(current_state))
 
             # Branch out
             branches = current_state.apply_rules(self.rules)
@@ -79,11 +82,12 @@ class StateGraph:
 
     def _apply_consequences(self, state):
 
-        states = [consequence.apply(state) for consequence in self.consequences]
-        states = [state for state in states if state is not None]
-        assert len(states) == 1
+        for consequence in self.consequences:
+            applied_consequence = consequence.apply(state)
+            if applied_consequence is not None:
+                state = applied_consequence
 
-        return states[0]
+        return state
 
     def _apply_constraints(self, branches):
         constrained_branches = []
@@ -98,7 +102,6 @@ class StateGraph:
             constraint_counter += enforcements.count(True)
 
         return constrained_branches, constraint_counter
-
 
     @property
     def edges(self):
@@ -149,8 +152,8 @@ class State:
                 branches.append(rule.apply(self))
             except DiscontinuityException:
                 self.discontinuity_counter += 1
-            except ConstraintEnforcementException:
-                self.constraint_counter += 1
+            #except ConstraintEnforcementException:
+            #    self.constraint_counter += 1
 
         return branches
 
