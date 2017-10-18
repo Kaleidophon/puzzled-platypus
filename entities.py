@@ -3,12 +3,21 @@
 Module defining entities for the causal graph.
 """
 
+# STD
+import copy
+
 
 class Entity:
     def __init__(self, **quantities):
+        self.quantity_names = quantities
         self.quantities = list(quantities.values())
         self.__dict__.update(quantities)
         #vars(self).update(quantities)
+
+    def __copy__(self):
+        return type(self)(
+            **dict(zip(self.quantity_names, [copy.copy(quantity) for quantity in self.quantities]))
+        )
 
 
 class Container(Entity):

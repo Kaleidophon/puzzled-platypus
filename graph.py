@@ -24,7 +24,7 @@ def main():
 
 def init_state_graph():
     # Construct tap
-    inflow = Quantity("inflow")
+    inflow = Quantity("inflow", derivative="+")
     tap = Tap(inflow=inflow)
 
     # Construct container
@@ -39,10 +39,10 @@ def init_state_graph():
 
     # Set up rules
     rules = [
-        PositiveConsequence(tap.inflow),
-        NegativeConsequence(tap.inflow),
-        PositiveAction(tap.inflow),
-        NegativeAction(tap.inflow)
+        PositiveConsequence("tap", "inflow"),
+        NegativeConsequence("tap", "inflow"),
+        PositiveAction("tap", "inflow"),
+        NegativeAction("tap", "inflow")
         #PositiveConsequence(volume),
         #PositiveConsequence(height),
         #PositiveConsequence(pressure),
