@@ -22,7 +22,6 @@ QUANTITY_RELATIONSHIPS = {
     "C-",       # A negative derivative will decrement the magnitude of the same quantity
     "A+",       # Open tap
     "A-"        # Close tap
-
 }
 
 
@@ -53,10 +52,11 @@ class StateGraph:
             branches = [branch for branch in branches if branch is not None]
 
             for rule, new_state in branches:
-                states[new_state] = new_state
                 transitions[(current_state.readable_id, rule)] = new_state
-                print("New state through rule {}: {}".format(rule, new_state.readable_id))
-                state_stack.append(new_state)
+                print("{} --({})--> {}".format(current_state.readable_id, rule, new_state.readable_id))
+                if new_state.readable_id not in states:
+                    states[new_state.readable_id] = new_state
+                    state_stack.append(new_state)
 
         return states, transitions
 
@@ -89,6 +89,7 @@ class State:
     Class to model a state in the state graph.
     """
     def __init__(self, **entities):
+        self.entity_names = entities.keys()
         self.entities = list(entities.values())
         vars(self).update(entities)
 
@@ -112,25 +113,35 @@ class State:
     def apply_rules(self, rules):
         return [rule.apply(self) for rule in rules]
 
+    def __copy__(self):
+        return State(**dict(zip(self.entity_names, [copy.copy(entity) for entity in self.entities])))
+
 
 class Relationship:
 
-    def __init__(self, quantity1, quantity2, relation):
-        assert type(quantity1) == Quantity and type(quantity2) == Quantity
+    def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2, relation):
         assert relation in QUANTITY_RELATIONSHIPS, "Unknown relationship"
-        self.quantity1 = quantity1
-        self.quantity2 = quantity2
+        self.entity1 = entity_name1
+        self.entity2 = entity_name2
+        self.quantity1 = quantity_name1
+        self.quantity2 = quantity_name2
         self.relation = relation
 
     @abc.abstractmethod
     def apply(self, state):
         pass
 
+    @staticmethod
+    def get_quantity(state, entity_name, quantity_name):
+        entity = getattr(state, entity_name)
+        return getattr(entity, quantity_name)
+
 
 class Reflexive(Relationship):
-    def __init__(self, quantity, relation):
-        self.quantity = quantity
-        super().__init__(quantity, quantity, relation)
+    def __init__(self, entity_name, quantity_name, relation):
+        self.entity_name = entity_name
+        self.quantity_name = quantity_name
+        super().__init__(entity_name, quantity_name, entity_name, quantity_name, relation)
 
     @abc.abstractmethod
     def apply(self, state):
@@ -138,55 +149,63 @@ class Reflexive(Relationship):
 
 
 class PositiveConsequence(Reflexive):
-    def __init__(self, quantity):
-        super().__init__(quantity, "C+")
+    def __init__(self, entity_name, quantity_name):
+        super().__init__(entity_name, quantity_name, "C+")
 
     def apply(self, state):
-        if self.quantity.derivative == "+" and not self.quantity.magnitude.is_max():
+        quantity = self.get_quantity(state, self.entity_name, self.quantity_name)
+        if quantity.derivative == "+" and not quantity.magnitude.is_max():
             new_state = copy.copy(state)
-            self.quantity.magnitude += 1
+            new_quantity = self.get_quantity(new_state, self.entity_name, self.quantity_name)
+            new_quantity.magnitude += 1
             return self.relation, new_state
 
 
 class NegativeConsequence(Reflexive):
-    def __init__(self, quantity):
-        super().__init__(quantity, "C-")
+    def __init__(self, entity_name, quantity_name):
+        super().__init__(entity_name, quantity_name, "C-")
 
     def apply(self, state):
-        if self.quantity.derivative == "-" and not self.quantity.magnitude.is_min():
+        quantity = self.get_quantity(state, self.entity_name, self.quantity_name)
+        if quantity.derivative == "-" and not quantity.magnitude.is_min():
             new_state = copy.copy(state)
-            self.quantity.magnitude -= 1
+            new_quantity = self.get_quantity(new_state, self.entity_name, self.quantity_name)
+            new_quantity.magnitude -= 1
             return self.relation, new_state
 
 
 class PositiveAction(Reflexive):
-    def __init__(self, quantity):
-        super().__init__(quantity, "A+")
+    def __init__(self, entity_name, quantity_name):
+        super().__init__(entity_name, quantity_name, "A+")
 
     def apply(self, state):
-        if not self.quantity.derivative.is_max():
+        quantity = self.get_quantity(state, self.entity_name, self.quantity_name)
+        if not quantity.derivative.is_max():
             new_state = copy.copy(state)
-            self.quantity.derivative += 1
+            new_quantity = self.get_quantity(new_state, self.entity_name, self.quantity_name)
+            new_quantity.derivative += 1
             return self.relation, new_state
 
 
 class NegativeAction(Reflexive):
-    def __init__(self, quantity):
-        super().__init__(quantity, "A-")
+    def __init__(self, entity_name, quantity_name):
+        super().__init__(entity_name, quantity_name, "A-")
 
     def apply(self, state):
-        if not self.quantity.derivative.is_min():
+        quantity = self.get_quantity(state, self.entity_name, self.quantity_name)
+        if not quantity.derivative.is_min():
             new_state = copy.copy(state)
-            self.quantity.derivative -= 1
+            new_quantity = self.get_quantity(new_state, self.entity_name, self.quantity_name)
+            new_quantity.derivative -= 1
             return self.relation, new_state
 
 
 class ValueCorrespondence(Relationship):
 
-    def __init__(self, quantity1, magnitude1, quantity2, magnitude2, constraint="VC_max"):
-        super().__init__(quantity1, quantity2, relation=constraint)
-        assert magnitude1 in quantity1.quantity_space, "Invalid value for magnitude: {}".format(magnitude1)
-        assert magnitude2 in quantity2.quantity_space, "Invalid value for magnitude: {}".format(magnitude2)
+    def __init__(self, quantity_name1, magnitude1, quantity_name2, magnitude2, constraint="VC_max"):
+        super().__init__(quantity_name1, quantity_name2, relation=constraint)
+        assert magnitude1 in quantity_name1.quantity_space, "Invalid value for magnitude: {}".format(magnitude1)
+        assert magnitude2 in quantity_name2.quantity_space, "Invalid value for magnitude: {}".format(magnitude2)
         self.magnitude1 = magnitude1
         self.magnitude2 = magnitude2
 
@@ -194,7 +213,3 @@ class ValueCorrespondence(Relationship):
         if self.quantity2.magnitude == self.magnitude2:
             return self.quantity1.magnitude == self.magnitude1
         return False
-
-
-if __name__ == "__main__":
-   rules = []
