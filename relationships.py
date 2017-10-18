@@ -170,13 +170,13 @@ class PositiveProportion(Proportion):
     def apply(self, state):
         quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
         quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
-        if quantity1.magnitude != "+" and quantity2.derivative != "+":
+        if quantity1.derivative == "+" and quantity2.derivative != "+":
             new_state = copy.copy(state)
             new_quantity = self.get_quantity(new_state, self.entity_name2, self.quantity_name2)
             new_quantity.derivative += 1
             return self.relation, new_state
 
-        if quantity1.magnitude != "-" and quantity2.derivative != "-":
+        if quantity1.derivative == "-" and quantity2.derivative != "-":
             new_state = copy.copy(state)
             new_quantity = self.get_quantity(new_state, self.entity_name2, self.quantity_name2)
             new_quantity.derivative -= 1
