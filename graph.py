@@ -10,7 +10,6 @@ from states import (
     StateGraph,
     State,
     ValueCorrespondence,
-    PositiveConsequence,
     NegativeConsequence,
     PositiveProportion,
     PositiveInfluence,
@@ -18,6 +17,8 @@ from states import (
     PositiveAction,
     NegativeAction
 )
+from relationships import PositiveConsequence, NegativeConsequence, PositiveAction, NegativeAction, PositiveInfluence, \
+    NegativeInfluence, PositiveProportion, ValueCorrespondence
 
 
 def main():
@@ -44,8 +45,8 @@ def init_state_graph():
     rules = [
         PositiveConsequence("tap", "inflow"),
         NegativeConsequence("tap", "inflow"),
-        PositiveAction("tap", "inflow"),
-        NegativeAction("tap", "inflow"),
+        #PositiveAction("tap", "inflow"),
+        #NegativeAction("tap", "inflow"),
         PositiveConsequence("container", "volume"),
         NegativeConsequence("container", "volume"),
         PositiveConsequence("container", "height"),
@@ -55,8 +56,8 @@ def init_state_graph():
         PositiveConsequence("drain", "outflow"),
         NegativeConsequence("drain", "outflow"),
         PositiveInfluence("tap", "inflow", "container", "volume"),
-        NegativeInfluence("drain", "outflow", "container", "volume"),
-        #PositiveProportion("container", "volume", "drain", "outflow"),
+        NegativeInfluence("container", "volume", "drain", "outflow"),
+        PositiveProportion("container", "volume", "drain", "outflow"),
         #PositiveProportion("container", "volume", "container", "height"),
         #PositiveProportion("container", "height", "container", "pressure")
     ]
