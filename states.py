@@ -34,17 +34,22 @@ class StateGraph:
         self.initial_state = initial_state
         self.rules = rules
 
-    def envision(self):
+    def envision(self, verbosity=0):
         if not (self.states or self.transitions):
-            self.states, self.transitions = self._envision()
+            self.states, self.transitions = self._envision(verbosity=verbosity)
         return self.states, self.transitions
 
-    def _envision(self):
+    def _envision(self, verbosity=0):
         states = {}
         transitions = {}
         state_stack = [self.initial_state]
         discontinuities = 0
 
+        if verbosity > 1:
+            print("{tspace}{tap:<4} | {cspace}{container:<16} | {drain} {relationship} {tap:>5}{tspace} | {container:>16}{cspace} | {drain}".format(
+                tap="tap", container="container", drain="drain", relationship="relationship",
+                tspace=" "*2, cspace=" "*8
+            ))
         while len(state_stack) != 0:
             current_state = state_stack.pop(0)
             branches = current_state.apply_rules(self.rules)
@@ -52,15 +57,19 @@ class StateGraph:
 
             for rule, new_state in branches:
                 transitions[(current_state.readable_id, rule)] = new_state
-                print("{} --({})--> {}".format(current_state.readable_id, rule, new_state.readable_id))
+
+                if verbosity > 1:
+                    print("{:<27} --({})-->   {}".format(current_state.readable_id, rule, new_state.readable_id))
+
                 if new_state.readable_id not in states:
                     states[new_state.readable_id] = new_state
                     state_stack.append(new_state)
 
             discontinuities += current_state.discontinuity_counter
 
-        print("\n{} state(s) and {} transitions detected.".format(len(states), len(transitions)))
-        print("{} state(s) were prohibited due to discontinuities.".format(discontinuities))
+        if verbosity > 0:
+            print("\n{} state(s) and {} transitions detected.".format(len(states), len(transitions)))
+            print("{} state(s) were prohibited due to discontinuities.".format(discontinuities))
 
         return states, transitions
 
@@ -104,11 +113,11 @@ class State:
 
     @property
     def readable_id(self):
-        return "|".join(
+        return "| ".join(
             [
-                ";".join(
+                "; ".join(
                     [
-                        "{} {}".format(str(quantity.magnitude), str(quantity.derivative))
+                        "{:<3} {:<3}".format(str(quantity.magnitude), str(quantity.derivative))
                         for quantity in entity.quantities
                     ]
                 )

@@ -6,24 +6,22 @@ Module defining our project's causal graph.
 # PROJECT
 from quantities import Quantity
 from entities import Tap, Container, Drain
-from states import (
-    StateGraph,
-    State,
-    ValueCorrespondence,
+from states import StateGraph, State
+from relationships import (
+    PositiveConsequence,
     NegativeConsequence,
-    PositiveProportion,
+    PositiveAction,
+    NegativeAction,
     PositiveInfluence,
     NegativeInfluence,
-    PositiveAction,
-    NegativeAction
+    PositiveProportion,
+    ValueCorrespondence
 )
-from relationships import PositiveConsequence, NegativeConsequence, PositiveAction, NegativeAction, PositiveInfluence, \
-    NegativeInfluence, PositiveProportion, ValueCorrespondence
 
 
 def main():
     state_graph = init_state_graph()
-    state_graph.envision()
+    state_graph.envision(verbosity=2)
 
 
 def init_state_graph():
@@ -45,8 +43,8 @@ def init_state_graph():
     rules = [
         PositiveConsequence("tap", "inflow"),
         NegativeConsequence("tap", "inflow"),
-        #PositiveAction("tap", "inflow"),
-        #NegativeAction("tap", "inflow"),
+        PositiveAction("tap", "inflow"),
+        NegativeAction("tap", "inflow"),
         PositiveConsequence("container", "volume"),
         NegativeConsequence("container", "volume"),
         PositiveConsequence("container", "height"),
@@ -58,8 +56,8 @@ def init_state_graph():
         PositiveInfluence("tap", "inflow", "container", "volume"),
         NegativeInfluence("container", "volume", "drain", "outflow"),
         PositiveProportion("container", "volume", "drain", "outflow"),
-        #PositiveProportion("container", "volume", "container", "height"),
-        #PositiveProportion("container", "height", "container", "pressure")
+        PositiveProportion("container", "volume", "container", "height"),
+        PositiveProportion("container", "height", "container", "pressure")
     ]
 
     # Create initial state
