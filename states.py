@@ -217,10 +217,12 @@ class NegativeAction(Reflexive):
 
 
 class Influence(Relationship):
-    def __init__(self, quantity1, quantity2, relation):
-        self.quantity1 = quantity1
-        self.quantity2 = quantity2
-        super().__init__(quantity1, quantity2, relation)
+    def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2, relation):
+        self.entity_name1 = entity_name1
+        self.quantity_name1 = quantity_name1
+        self.entity_name2 = entity_name2
+        self.quantity_name2 = quantity_name2
+        super().__init__(entity_name1, quantity_name1, entity_name2, quantity_name2, relation)
 
     @abc.abstractmethod
     def apply(self, state):
@@ -228,32 +230,40 @@ class Influence(Relationship):
 
 
 class PositiveInfluence(Influence):
-    def __init__(self, quantity1, quantity2):
-        super().__init__(quantity1, quantity2, "I+")
+    def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2):
+        super().__init__(entity_name1, quantity_name1, entity_name2, quantity_name2, "I+")
 
     def apply(self, state):
-        if self.quantity1.magnitude != "0" and self.quantity2.derivative != "+":
+        quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
+        quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
+        if quantity1.magnitude != "0" and quantity2.derivative != "+":
             new_state = copy.copy(state)
-            self.quantity2.derivative += 1
+            new_quantity = self.get_quantity(new_state, self.entity_name2, self.quantity_name2)
+            new_quantity.derivative += 1
             return self.relation, new_state
 
 
 class NegativeInfluence(Influence):
-    def __init__(self, quantity1, quantity2):
-        super().__init__(quantity1, quantity2, "I-")
+    def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2):
+        super().__init__(entity_name1, quantity_name1, entity_name2, quantity_name2, "I-")
 
     def apply(self, state):
-        if self.quantity1.magnitude != "0" and self.quantity2.derivative != "-":
+        quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
+        quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
+        if quantity1.magnitude != "0" and quantity2.derivative != "-":
             new_state = copy.copy(state)
-            self.quantity2.derivative -= 1
+            new_quantity = self.get_quantity(new_state, self.entity_name2, self.quantity_name2)
+            new_quantity.derivative -= 1
             return self.relation, new_state
 
 
 class Proportion(Relationship):
-    def __init__(self, quantity1, quantity2, relation):
-        self.quantity1 = quantity1
-        self.quantity2 = quantity2
-        super().__init__(quantity1, quantity2, relation)
+    def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2, relation):
+        self.entity_name1 = entity_name1
+        self.quantity_name1 = quantity_name1
+        self.entity_name2 = entity_name2
+        self.quantity_name2 = quantity_name2
+        super().__init__(entity_name1, quantity_name1, entity_name2, quantity_name2, relation)
 
     @abc.abstractmethod
     def apply(self, state):
@@ -261,18 +271,22 @@ class Proportion(Relationship):
 
 
 class PositiveProportion(Proportion):
-    def __init__(self, quantity1, quantity2):
-        super().__init__(quantity1, quantity2, "P+")
+    def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2):
+        super().__init__(entity_name1, quantity_name1, entity_name2, quantity_name2, "P+")
 
     def apply(self, state):
-        if self.quantity1.derivative == "+" and self.quantity2.derivative != "+":
+        quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
+        quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
+        if quantity1.magnitude != "+" and quantity2.derivative != "+":
             new_state = copy.copy(state)
-            self.quantity2.derivative += 1
+            new_quantity = self.get_quantity(new_state, self.entity_name2, self.quantity_name2)
+            new_quantity.derivative += 1
             return self.relation, new_state
 
-        if self.quantity1.derivative == "-" and self.quantity2.derivative != "-":
+        if quantity1.magnitude != "-" and quantity2.derivative != "-":
             new_state = copy.copy(state)
-            self.quantity2.derivative -= 1
+            new_quantity = self.get_quantity(new_state, self.entity_name2, self.quantity_name2)
+            new_quantity.derivative -= 1
             return self.relation, new_state
 
 
