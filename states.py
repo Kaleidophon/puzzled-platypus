@@ -197,9 +197,9 @@ class PositiveInfluence(Influence):
         super().__init__(quantity1, quantity2, "I+")
 
     def apply(self, state):
-        if self.quantity1.magnitude != "0" and not self.quantity2.magnitude.is_max():
+        if self.quantity1.magnitude != "0" and self.quantity2.derivative != "+":
             new_state = copy.copy(state)
-            self.quantity2.magnitude += 1
+            self.quantity2.derivative += 1
             return self.relation, new_state
 
 
@@ -208,9 +208,9 @@ class NegativeInfluence(Influence):
         super().__init__(quantity1, quantity2, "I-")
 
     def apply(self, state):
-        if self.quantity1.magnitude != "0" and not self.quantity2.magnitude.is_min():
+        if self.quantity1.magnitude != "0" and self.quantity2.derivative != "-":
             new_state = copy.copy(state)
-            self.quantity2.magnitude -= 1
+            self.quantity2.derivative -= 1
             return self.relation, new_state
 
 
@@ -230,14 +230,14 @@ class PositiveProportion(Proportion):
         super().__init__(quantity1, quantity2, "P+")
 
     def apply(self, state):
-        if self.quantity1.derivative == "+" and not self.quantity2.magnitude.is_max():
+        if self.quantity1.derivative == "+" and self.quantity2.derivative != "+":
             new_state = copy.copy(state)
-            self.quantity2.magnitude += 1
+            self.quantity2.derivative += 1
             return self.relation, new_state
 
-        if self.quantity1.derivative == "-" and not self.quantity2.magnitude.is_min():
+        if self.quantity1.derivative == "-" and self.quantity2.derivative != "-":
             new_state = copy.copy(state)
-            self.quantity2.magnitude -= 1
+            self.quantity2.derivative -= 1
             return self.relation, new_state
 
 
