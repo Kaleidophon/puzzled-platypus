@@ -18,9 +18,11 @@ class StateGraph:
     states = None
     transitions = None
 
-    def __init__(self, initial_state, rules):
+    def __init__(self, initial_state, rules, consequences, constraints):
         self.initial_state = initial_state
         self.rules = rules
+        self.consequences = consequences
+        self.constraints = constraints
 
     def envision(self, verbosity=0):
         if not (self.states or self.transitions):
@@ -34,14 +36,26 @@ class StateGraph:
         discontinuities, constraints = 0, 0
 
         if verbosity > 1:
-            print("{tspace}{tap:<4} | {cspace}{container:<16} | {drain} {relationship} {tap:>5}{tspace} | {container:>16}{cspace} | {drain}".format(
-                tap="tap", container="container", drain="drain", relationship="relationship",
-                tspace=" "*2, cspace=" "*8
-            ))
+            print(
+                "{tspace}{tap:<4} | {cspace}{container:<16} | {drain} {relationship} {tap:>5}{tspace} | "
+                "{container:>16}{cspace} | {drain}".format(
+                    tap="tap", container="container", drain="drain", relationship="relationship",
+                    tspace=" "*2, cspace=" "*8
+                )
+            )
+
         while len(state_stack) != 0:
             current_state = state_stack.pop(0)
+
+            current_state = self._apply_consequences(current_state)
+
+            # Branch out
             branches = current_state.apply_rules(self.rules)
-            branches = [branch for branch in branches if branch is not None]
+            branches = [branch for branch in branches if branch is not None]  # Clean up
+
+            # Filter branches by applying constraints
+            branches, local_constraint_counter = self._apply_constraints(branches)
+            constraints += local_constraint_counter
 
             for rule, new_state in branches:
                 transitions[(current_state.readable_id, rule)] = new_state
@@ -63,6 +77,29 @@ class StateGraph:
 
         return states, transitions
 
+    def _apply_consequences(self, state):
+
+        states = [consequence.apply(state) for consequence in self.consequences]
+        states = [state for state in states if state is not None]
+        assert len(states) == 1
+
+        return states[0]
+
+    def _apply_constraints(self, branches):
+        constrained_branches = []
+        constraint_counter = 0
+
+        for rule, state in branches:
+            enforcements = [constraint.apply(state) for constraint in self.constraints]
+
+            if not any(enforcements):
+                constrained_branches.append((rule, state))
+
+            constraint_counter += enforcements.count(True)
+
+        return constrained_branches, constraint_counter
+
+
     @property
     def edges(self):
         states, _ = self.envision()
@@ -73,18 +110,6 @@ class StateGraph:
         self.envision()
         _, transitions = self.envision()
         return transitions
-
-    # has:
-    # states
-    # transitions
-
-    # Algorithm that generates new states
-
-    # transition rules ("things that create a new state")
-    #  - dependencies (I+, I-, ...)
-    #  - implications (M:0, D:+ -> M:+, D:+)
-    #  - influence (turn up / down tap)
-    pass
 
 
 class State:
