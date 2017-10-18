@@ -1,7 +1,29 @@
+# -*- coding: utf-8 -*-
+"""
+Module defining different kinds of relationships.
+"""
+
+# STD
 import abc
 import copy
-from quantities import DiscontinuityException
-from states import QUANTITY_RELATIONSHIPS
+
+# CONST
+QUANTITY_RELATIONSHIPS = {
+    "I+",
+    "I-",
+    "P+",
+    "P-",
+    "VC_max",
+    "VC_0",
+    "C+",       # A positive derivative will increment the magnitude of the same quantity
+    "C-",       # A negative derivative will decrement the magnitude of the same quantity
+    "A+",       # Open tap
+    "A-"        # Close tap
+}
+
+
+class ConstraintEnforcementException(Exception):
+    pass
 
 
 class Relationship:
@@ -183,10 +205,9 @@ class VCmax(ValueCorrespondence):
     def apply(self, state):
         quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
         quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
+
         if quantity1.magnitude != "max":
-            raise DiscontinuityException(
-                #"Discontinuity detected due to VCMax! Magnitude: {} Derivative: {}".format(self.magnitude, self.derivative)
-            )
+            raise ConstraintEnforcementException("Enforcing VC max constraint.")
 
 
 class VCzero(ValueCorrespondence):
@@ -196,7 +217,6 @@ class VCzero(ValueCorrespondence):
     def apply(self, state):
         quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
         quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
+        
         if quantity1.magnitude != "0":
-            raise DiscontinuityException(
-                #"Discontinuity detected due to VCzero! Magnitude: {} Derivative: {}".format(self.magnitude, self.derivative)
-            )
+            raise ConstraintEnforcementException("Enforcing VC zero constraint.")

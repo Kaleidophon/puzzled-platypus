@@ -6,21 +6,9 @@ Module defining the state graph.
 # STD
 import copy
 
+# PROJECT
 from quantities import DiscontinuityException
-
-# CONST
-QUANTITY_RELATIONSHIPS = {
-    "I+",
-    "I-",
-    "P+",
-    "P-",
-    "VC_max",
-    "VC_0",
-    "C+",       # A positive derivative will increment the magnitude of the same quantity
-    "C-",       # A negative derivative will decrement the magnitude of the same quantity
-    "A+",       # Open tap
-    "A-"        # Close tap
-}
+from relationships import ConstraintEnforcementException
 
 
 class StateGraph:
@@ -43,7 +31,7 @@ class StateGraph:
         states = {}
         transitions = {}
         state_stack = [self.initial_state]
-        discontinuities = 0
+        discontinuities, constraints = 0, 0
 
         if verbosity > 1:
             print("{tspace}{tap:<4} | {cspace}{container:<16} | {drain} {relationship} {tap:>5}{tspace} | {container:>16}{cspace} | {drain}".format(
@@ -66,10 +54,12 @@ class StateGraph:
                     state_stack.append(new_state)
 
             discontinuities += current_state.discontinuity_counter
+            constraints += current_state.constraint_counter
 
         if verbosity > 0:
             print("\n{} state(s) and {} transitions detected.".format(len(states), len(transitions)))
             print("{} state(s) were prohibited due to discontinuities.".format(discontinuities))
+            print("Constraints were enforced {} times.".format(constraints))
 
         return states, transitions
 
@@ -102,6 +92,7 @@ class State:
     Class to model a state in the state graph.
     """
     discontinuity_counter = 0
+    constraint_counter = 0
 
     def __init__(self, **entities):
         self.entity_names = entities.keys()
@@ -133,6 +124,8 @@ class State:
                 branches.append(rule.apply(self))
             except DiscontinuityException:
                 self.discontinuity_counter += 1
+            except ConstraintEnforcementException:
+                self.constraint_counter += 1
 
         return branches
 
