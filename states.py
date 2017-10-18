@@ -8,7 +8,7 @@ import abc
 import copy
 
 # PROJECT
-from quantities import QUANTITY_SPACES, Quantity
+from quantities import QUANTITY_SPACES, Quantity, DiscontinuityException
 
 # CONST
 QUANTITY_RELATIONSHIPS = {
@@ -45,6 +45,7 @@ class StateGraph:
         states = {}
         transitions = {}
         state_stack = [self.initial_state]
+        discontinuities = 0
 
         while len(state_stack) != 0:
             current_state = state_stack.pop(0)
@@ -57,6 +58,11 @@ class StateGraph:
                 if new_state.readable_id not in states:
                     states[new_state.readable_id] = new_state
                     state_stack.append(new_state)
+
+            discontinuities += current_state.discontinuity_counter
+
+        print("\n{} state(s) and {} transitions detected.".format(len(states), len(transitions)))
+        print("{} state(s) were prohibited due to discontinuities.".format(discontinuities))
 
         return states, transitions
 
@@ -88,6 +94,8 @@ class State:
     """
     Class to model a state in the state graph.
     """
+    discontinuity_counter = 0
+
     def __init__(self, **entities):
         self.entity_names = entities.keys()
         self.entities = list(entities.values())
@@ -111,7 +119,15 @@ class State:
         )
 
     def apply_rules(self, rules):
-        return [rule.apply(self) for rule in rules]
+        branches = []
+
+        for rule in rules:
+            try:
+                branches.append(rule.apply(self))
+            except DiscontinuityException:
+                self.discontinuity_counter += 1
+
+        return branches
 
     def __copy__(self):
         return State(**dict(zip(self.entity_names, [copy.copy(entity) for entity in self.entities])))
