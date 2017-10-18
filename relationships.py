@@ -67,7 +67,7 @@ class PositiveConsequence(Reflexive):
             new_state = copy.copy(state)
             new_quantity = self.get_quantity(new_state, self.entity_name, self.quantity_name)
             new_quantity.magnitude += 1
-            return self.relation, new_state
+            return new_state
 
 
 class NegativeConsequence(Reflexive):
@@ -80,7 +80,7 @@ class NegativeConsequence(Reflexive):
             new_state = copy.copy(state)
             new_quantity = self.get_quantity(new_state, self.entity_name, self.quantity_name)
             new_quantity.magnitude -= 1
-            return self.relation, new_state
+            return new_state
 
 
 class PositiveAction(Reflexive):
@@ -207,7 +207,9 @@ class VCmax(ValueCorrespondence):
         quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
 
         if quantity1.magnitude != "max":
-            raise ConstraintEnforcementException("Enforcing VC max constraint.")
+            # raise ConstraintEnforcementException("Enforcing VC max constraint.")
+            return True
+        return False
 
 
 class VCzero(ValueCorrespondence):
@@ -217,6 +219,8 @@ class VCzero(ValueCorrespondence):
     def apply(self, state):
         quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
         quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
-        
+
         if quantity1.magnitude != "0":
-            raise ConstraintEnforcementException("Enforcing VC zero constraint.")
+            #raise ConstraintEnforcementException("Enforcing VC zero constraint.")
+            return True
+        return False

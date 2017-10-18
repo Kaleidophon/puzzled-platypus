@@ -36,10 +36,17 @@ def init_state_graph():
 
     # Set up rules
     rules = [
-        PositiveConsequence("tap", "inflow"),
-        NegativeConsequence("tap", "inflow"),
         #PositiveAction("tap", "inflow"),
         #NegativeAction("tap", "inflow"),
+        PositiveInfluence("tap", "inflow", "container", "volume"),
+        NegativeInfluence("container", "volume", "drain", "outflow"),
+        PositiveProportion("container", "volume", "drain", "outflow"),
+        #PositiveProportion("container", "volume", "container", "height"),
+        #PositiveProportion("container", "height", "container", "pressure"),
+    ]
+    consequences = [
+        PositiveConsequence("tap", "inflow"),
+        NegativeConsequence("tap", "inflow"),
         PositiveConsequence("container", "volume"),
         NegativeConsequence("container", "volume"),
         PositiveConsequence("container", "height"),
@@ -48,11 +55,8 @@ def init_state_graph():
         NegativeConsequence("container", "pressure"),
         PositiveConsequence("drain", "outflow"),
         NegativeConsequence("drain", "outflow"),
-        PositiveInfluence("tap", "inflow", "container", "volume"),
-        NegativeInfluence("container", "volume", "drain", "outflow"),
-        PositiveProportion("container", "volume", "drain", "outflow"),
-        #PositiveProportion("container", "volume", "container", "height"),
-        #PositiveProportion("container", "height", "container", "pressure"),
+    ]
+    constraints = [
         VCmax("container", "volume", "drain", "outflow"),
         VCzero("container", "volume", "drain", "outflow")
     ]
@@ -61,7 +65,7 @@ def init_state_graph():
     init_state = State(tap=tap, container=container, drain=drain)
 
     # Create state graph
-    state_graph = StateGraph(initial_state=init_state, rules=rules)
+    state_graph = StateGraph(initial_state=init_state, rules=rules, consequences=consequences, constraints=constraints)
     return state_graph
 
 if __name__ == "__main__":
