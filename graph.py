@@ -39,10 +39,10 @@ def init_state_graph():
         #PositiveAction("tap", "inflow"),
         #NegativeAction("tap", "inflow"),
         PositiveInfluence("tap", "inflow", "container", "volume"),
-        NegativeInfluence("container", "volume", "drain", "outflow"),
+        NegativeInfluence("drain", "outflow", "container", "volume"),
         PositiveProportion("container", "volume", "drain", "outflow"),
-        #PositiveProportion("container", "volume", "container", "height"),
-        #PositiveProportion("container", "height", "container", "pressure"),
+        # PositiveProportion("container", "volume", "container", "height"),
+        # PositiveProportion("container", "height", "container", "pressure")
     ]
     consequences = [
         PositiveConsequence("tap", "inflow"),
