@@ -6,17 +6,12 @@ Module defining our project's causal graph.
 # PROJECT
 from quantities import Quantity
 from entities import Tap, Container, Drain
-from states import StateGraph, State
-from relationships import (
-    PositiveConsequence,
-    NegativeConsequence,
-    PositiveAction,
-    NegativeAction,
-    PositiveInfluence,
-    NegativeInfluence,
-    PositiveProportion,
-    ValueCorrespondence
+from states import (
+    StateGraph,
+    State
 )
+from relationships import PositiveConsequence, NegativeConsequence, PositiveAction, NegativeAction, PositiveInfluence, \
+    NegativeInfluence, PositiveProportion, VCmax, VCzero
 
 
 def main():
@@ -57,7 +52,9 @@ def init_state_graph():
         NegativeInfluence("container", "volume", "drain", "outflow"),
         PositiveProportion("container", "volume", "drain", "outflow"),
         PositiveProportion("container", "volume", "container", "height"),
-        PositiveProportion("container", "height", "container", "pressure")
+        PositiveProportion("container", "height", "container", "pressure"),
+        VCmax("container", "volume", "drain", "outflow"),
+        VCzero("container", "volume", "drain", "outflow")
     ]
 
     # Create initial state

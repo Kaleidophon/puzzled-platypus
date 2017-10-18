@@ -1,6 +1,6 @@
 import abc
 import copy
-
+from quantities import DiscontinuityException
 from states import QUANTITY_RELATIONSHIPS
 
 
@@ -162,14 +162,41 @@ class PositiveProportion(Proportion):
 
 
 class ValueCorrespondence(Relationship):
-    def __init__(self, quantity1, magnitude1, quantity2, magnitude2, constraint="VC_max"):
-        super().__init__(quantity1, quantity2, relation=constraint)
-        assert magnitude1 in quantity1.quantity_space, "Invalid value for magnitude: {}".format(magnitude1)
-        assert magnitude2 in quantity2.quantity_space, "Invalid value for magnitude: {}".format(magnitude2)
+    def __init__(self, entity_name1, quantity_name1, magnitude1, entity_name2, quantity_name2, magnitude2, constraint):
+        super().__init__(entity_name1, quantity_name1, entity_name2, quantity_name2, relation=constraint)
+        self.entity_name1 = entity_name1
+        self.quantity_name1 = quantity_name1
+        self.entity_name2 = entity_name2
+        self.quantity_name2 = quantity_name2
         self.magnitude1 = magnitude1
         self.magnitude2 = magnitude2
 
-    def check_correspondence(self):
-        if self.quantity2.magnitude == self.magnitude2:
-            return self.quantity1.magnitude == self.magnitude1
-        return False
+    @abc.abstractmethod
+    def apply(self, state):
+        pass
+
+
+class VCmax(ValueCorrespondence):
+    def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2):
+        super().__init__(entity_name1, quantity_name1, "max", entity_name2, quantity_name2, "max", "VC_max")
+
+    def apply(self, state):
+        quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
+        quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
+        if quantity1.magnitude != "max":
+            raise DiscontinuityException(
+                #"Discontinuity detected due to VCMax! Magnitude: {} Derivative: {}".format(self.magnitude, self.derivative)
+            )
+
+
+class VCzero(ValueCorrespondence):
+    def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2):
+        super().__init__(entity_name1, quantity_name1, "0", entity_name2, quantity_name2, "0", "VC_0")
+
+    def apply(self, state):
+        quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
+        quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
+        if quantity1.magnitude != "0":
+            raise DiscontinuityException(
+                #"Discontinuity detected due to VCzero! Magnitude: {} Derivative: {}".format(self.magnitude, self.derivative)
+            )
