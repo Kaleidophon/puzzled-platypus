@@ -57,8 +57,12 @@ def init_state_graph():
         NegativeConsequence("drain", "outflow"),
     ]
     constraints = [
-        #VCmax("container", "volume", "drain", "outflow"),
-        #VCzero("container", "volume", "drain", "outflow")
+        VCmax("container", "pressure", "drain", "outflow"),
+        VCzero("container", "pressure", "drain", "outflow"),
+        VCmax("container", "height", "container", "pressure"),
+        VCzero("container", "height", "container", "pressure"),
+        VCmax("container", "volume", "container", "height"),
+        VCzero("container", "volume", "container", "height"),
     ]
 
     # Create initial state
