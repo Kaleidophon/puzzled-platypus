@@ -30,27 +30,38 @@ class StateGraph:
         return self.states, self.transitions
 
     def _envision(self, verbosity=0):
-        states = {}
+        states = {self.initial_state.readable_id: self.initial_state}
         transitions = {}
         state_stack = [self.initial_state]
         discontinuities, constraints = 0, 0
 
         if verbosity > 1:
             print(
-                "{tspace}{tap:<4} | {cspace}{container:<16} | {drain} {relationship} {tap:>5}{tspace} | "
+                "\n{tspace}{tap:<4} | {cspace}{container:<16} | {drain} {relationship} {tap:>5}{tspace} | "
                 "{container:>16}{cspace} | {drain}".format(
-                    tap="tap", container="container", drain="drain", relationship="relationship",
+                    tap="tap", container="container", drain="drain", relationship=" "*12,
                     tspace=" "*2, cspace=" "*8
                 )
             )
+            print("{}+{}+{}{}{}+{}+{}".format("-"*7, "-"*26, "-"*7, " "*14, "-"*7, "-"*26, "-"*6))
 
         while len(state_stack) != 0:
             current_state = state_stack.pop(0)
 
-            current_state = self._apply_consequences(current_state)
+            implied_state = self._apply_consequences(current_state)
+
+            if current_state.readable_id != implied_state.readable_id:
+                transitions[(current_state.readable_id, "C?")] = implied_state
+                states[implied_state.readable_id] = implied_state
+
+                if verbosity > 1:
+                    print("{:<27} --({})-->   {}".format(current_state.readable_id, "C?", implied_state.readable_id))
+
+            #if verbosity > 1:
+            #    print("Current state: {}".format(current_state))
 
             # Branch out
-            branches = current_state.apply_rules(self.rules)
+            branches = implied_state.apply_rules(self.rules)
             branches = [branch for branch in branches if branch is not None]  # Clean up
 
             # Filter branches by applying constraints
@@ -58,17 +69,27 @@ class StateGraph:
             constraints += local_constraint_counter
 
             for rule, new_state in branches:
-                transitions[(current_state.readable_id, rule)] = new_state
+                transitions[(implied_state.readable_id, rule)] = new_state
 
                 if verbosity > 1:
-                    print("{:<27} --({})-->   {}".format(current_state.readable_id, rule, new_state.readable_id))
+                    print("{:<27} --({})-->   {}".format(implied_state.readable_id, rule, new_state.readable_id))
 
                 if new_state.readable_id not in states:
                     states[new_state.readable_id] = new_state
                     state_stack.append(new_state)
 
-            discontinuities += current_state.discontinuity_counter
-            constraints += current_state.constraint_counter
+            discontinuities += implied_state.discontinuity_counter
+            constraints += implied_state.constraint_counter
+
+        if verbosity > 1:
+            print("\n{pad} States found {pad}\n".format(pad="#"*14))
+            print("{tspace}{tap:<4} | {cspace}{container:<16} | {drain}".format(
+                    tap="tap", container="container", drain="drain", tspace=" "*2, cspace=" "*8
+                )
+            )
+            print("{}+{}+{}".format("-"*7, "-"*26, "-"*7))
+            for state_id in states.keys():
+                print(state_id)
 
         if verbosity > 0:
             print("\n{} state(s) and {} transitions detected.".format(len(states), len(transitions)))
@@ -79,11 +100,12 @@ class StateGraph:
 
     def _apply_consequences(self, state):
 
-        states = [consequence.apply(state) for consequence in self.consequences]
-        states = [state for state in states if state is not None]
-        assert len(states) == 1
+        for consequence in self.consequences:
+            applied_consequence = consequence.apply(state)
+            if applied_consequence is not None:
+                state = applied_consequence
 
-        return states[0]
+        return state
 
     def _apply_constraints(self, branches):
         constrained_branches = []
@@ -98,7 +120,6 @@ class StateGraph:
             constraint_counter += enforcements.count(True)
 
         return constrained_branches, constraint_counter
-
 
     @property
     def edges(self):
@@ -149,8 +170,8 @@ class State:
                 branches.append(rule.apply(self))
             except DiscontinuityException:
                 self.discontinuity_counter += 1
-            except ConstraintEnforcementException:
-                self.constraint_counter += 1
+            #except ConstraintEnforcementException:
+            #    self.constraint_counter += 1
 
         return branches
 

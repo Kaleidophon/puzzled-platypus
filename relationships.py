@@ -206,7 +206,8 @@ class VCmax(ValueCorrespondence):
         quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
         quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
 
-        if quantity1.magnitude != "max" and quantity2.magnitude == "max":
+        # if quantity1.magnitude != "max" and quantity2.magnitude == "max":  # Raj's Interpretation
+        if quantity1.magnitude == "max" and quantity2.magnitude != "max":  # Dennis' Interpretation
             # raise ConstraintEnforcementException("Enforcing VC max constraint.")
             return True
         return False
@@ -219,8 +220,9 @@ class VCzero(ValueCorrespondence):
     def apply(self, state):
         quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
         quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
-        
-        if quantity1.magnitude != "0" and quantity2.magnitude == "0":
+
+        # if quantity1.magnitude != "0" and quantity2.magnitude == "0":  # Raj's Interpretation
+        if quantity1.magnitude == "0" and quantity2.magnitude != "0":  # Dennis' Interpretation
             # raise ConstraintEnforcementException("Enforcing VC zero constraint.")
             return True
         return False
