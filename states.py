@@ -42,15 +42,11 @@ class StateGraph:
 
             implied_state = self._apply_consequences(current_state)
 
-            if current_state.readable_id != implied_state.readable_id:
-                transitions[(current_state.readable_id, "C?")] = implied_state
-                states[implied_state.readable_id] = implied_state
+            transitions[(current_state.readable_id, "C?")] = implied_state
+            states[implied_state.readable_id] = implied_state
 
-                if verbosity > 1:
-                    print("{:<27} --({})-->   {}".format(current_state.readable_id, "C?", implied_state.readable_id))
-
-            #if verbosity > 1:
-            #    print("Current state: {}".format(current_state))
+            if verbosity > 1:
+                print("{:<27} --({})-->   {}".format(current_state.readable_id, "C?", implied_state.readable_id))
 
             # Branch out
             branches = implied_state.apply_rules(self.rules)
@@ -98,10 +94,10 @@ class StateGraph:
         for rule, state in branches:
             enforcements = [constraint.apply(state) for constraint in self.constraints]
 
-            if not any(enforcements):
+            if all(enforcements):
                 constrained_branches.append((rule, state))
 
-            constraint_counter += enforcements.count(True)
+            constraint_counter += enforcements.count(False)
 
         return constrained_branches, constraint_counter
 
@@ -162,6 +158,7 @@ class StateGraph:
                 for state_id in states.keys():
                     print(state_id)
 
+
 class State:
     """
     Class to model a state in the state graph.
@@ -192,17 +189,7 @@ class State:
         )
 
     def apply_rules(self, rules):
-        branches = []
-
-        for rule in rules:
-            try:
-                branches.append(rule.apply(self))
-            except DiscontinuityException:
-                self.discontinuity_counter += 1
-            #except ConstraintEnforcementException:
-            #    self.constraint_counter += 1
-
-        return branches
+        return [rule.apply(self) for rule in rules]
 
     def __copy__(self):
         return State(**dict(zip(self.entity_names, [copy.copy(entity) for entity in self.entities])))
