@@ -6,10 +6,6 @@ Module defining the state graph.
 # STD
 import copy
 
-# PROJECT
-from quantities import DiscontinuityException
-from relationships import ConstraintEnforcementException
-
 
 class StateGraph:
     """
@@ -92,12 +88,12 @@ class StateGraph:
         constraint_counter = 0
 
         for rule, state in branches:
-            enforcements = [constraint.apply(state) for constraint in self.constraints]
+            feedbacks = [constraint.holds(state) for constraint in self.constraints]
 
-            if all(enforcements):
+            if all(feedbacks):
                 constrained_branches.append((rule, state))
 
-            constraint_counter += enforcements.count(False)
+            constraint_counter += feedbacks.count(False)
 
         return constrained_branches, constraint_counter
 

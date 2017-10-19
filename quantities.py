@@ -3,9 +3,6 @@
 Module defining quantities.
 """
 
-# STD
-from functools import wraps
-
 # CONST
 GLOBAL_QUANTITY_SPACE = ("min", "-", "0", "+", "max")
 QUANTITY_SPACE_INFLOW = ("0", "+")
@@ -20,10 +17,6 @@ QUANTITY_SPACES = {
     "pressure": QUANTITY_SPACE_PRESSURE,
     "height": QUANTITY_SPACE_HEIGHT
 }
-
-
-class DiscontinuityException(Exception):
-    pass
 
 
 class Quantifiable:
@@ -79,16 +72,6 @@ class Quantifiable:
         return self == other
 
 
-class FrozenQuantifiable(Quantifiable):
-    """
-    Quantifiable that has an immutable value.
-    """
-    def __setattr__(self, key, value):
-        if key == "value":
-            raise KeyError("Cannot set value for an immutable quantity.")
-        super().__setattr__(key, value)
-
-
 class Quantity:
     """
     Class modeling a quantity of a inflow, outflow or volume.
@@ -117,14 +100,4 @@ class Quantity:
 
     def __str__(self):
         return "{}, {}".format(self.magnitude, self.derivative)
-
-
-class FrozenQuantity(Quantity):
-    """
-    Quantity that is immutable.
-    """
-    def init_quantifiables(self, magnitude, derivative):
-        # Wrap magnitude and derivative in Quantifiables for neat addition / subtraction functionalities
-        self.magnitude = FrozenQuantifiable(value=magnitude, quantity_space=self.quantity_space)
-        self.derivative = FrozenQuantifiable(value=derivative, quantity_space=QUANTITY_SPACE_DERIVATIVE)
 
