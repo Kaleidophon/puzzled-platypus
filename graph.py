@@ -41,8 +41,8 @@ def init_state_graph():
         PositiveInfluence("tap", "inflow", "container", "volume"),
         NegativeInfluence("drain", "outflow", "container", "volume"),
         PositiveProportion("container", "volume", "drain", "outflow"),
-        # PositiveProportion("container", "volume", "container", "height"),
-        # PositiveProportion("container", "height", "container", "pressure")
+        PositiveProportion("container", "volume", "container", "height"),
+        PositiveProportion("container", "height", "container", "pressure")
     ]
     consequences = [
         PositiveConsequence("tap", "inflow"),
@@ -51,14 +51,14 @@ def init_state_graph():
         NegativeConsequence("container", "volume"),
         PositiveConsequence("container", "height"),
         NegativeConsequence("container", "height"),
-        NegativeConsequence("container", "pressure"),
+        PositiveConsequence("container", "pressure"),
         NegativeConsequence("container", "pressure"),
         PositiveConsequence("drain", "outflow"),
         NegativeConsequence("drain", "outflow"),
     ]
     constraints = [
-        VCmax("container", "volume", "drain", "outflow"),
-        VCzero("container", "volume", "drain", "outflow")
+        #VCmax("container", "volume", "drain", "outflow"),
+        #VCzero("container", "volume", "drain", "outflow")
     ]
 
     # Create initial state
