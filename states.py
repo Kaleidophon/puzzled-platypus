@@ -35,15 +35,7 @@ class StateGraph:
         state_stack = [self.initial_state]
         discontinuities, constraints = 0, 0
 
-        if verbosity > 1:
-            print(
-                "\n{tspace}{tap:<4} | {cspace}{container:<16} | {drain} {relationship} {tap:>5}{tspace} | "
-                "{container:>16}{cspace} | {drain}".format(
-                    tap="tap", container="container", drain="drain", relationship=" "*12,
-                    tspace=" "*2, cspace=" "*8
-                )
-            )
-            print("{}+{}+{}{}{}+{}+{}".format("-"*7, "-"*26, "-"*7, " "*14, "-"*7, "-"*26, "-"*6))
+        self._print_transition_table_header(verbosity)
 
         while len(state_stack) != 0:
             current_state = state_stack.pop(0)
@@ -81,19 +73,11 @@ class StateGraph:
             discontinuities += implied_state.discontinuity_counter
             constraints += implied_state.constraint_counter
 
-        if verbosity > 1:
-            print("\n{pad} States found {pad}\n".format(pad="#"*14))
-            print("{tspace}{tap:<4} | {cspace}{container:<16} | {drain}".format(
-                    tap="tap", container="container", drain="drain", tspace=" "*2, cspace=" "*8
-                )
-            )
-            print("{}+{}+{}".format("-"*7, "-"*26, "-"*7))
-            for state_id in states.keys():
-                print(state_id)
+        self._print_state_table_header(verbosity, states)
 
         if verbosity > 0:
             print("\n{} state(s) and {} transitions detected.".format(len(states), len(transitions)))
-            print("{} state(s) were prohibited due to discontinuities.".format(discontinuities))
+            #print("{} state(s) were prohibited due to discontinuities.".format(discontinuities))
             print("Constraints were enforced {} times.".format(constraints))
 
         return states, transitions
@@ -132,6 +116,51 @@ class StateGraph:
         _, transitions = self.envision()
         return transitions
 
+    def _print_transition_table_header(self, verbosity):
+        if verbosity > 1:
+            # Not beautiful but still in the scope of this project
+            if len(self.initial_state.container.quantities) == 3:
+                print(
+                    "\n{tspace}{tap:<4} | {cspace}{container:<16} | {drain} {relationship} {tap:>5}{tspace} | "
+                    "{container:>16}{cspace} | {drain}".format(
+                        tap="tap", container="container", drain="drain", relationship=" "*12,
+                        tspace=" "*2, cspace=" "*8
+                    )
+                )
+                print("{}+{}+{}{}{}+{}+{}".format("-"*7, "-"*26, "-"*7, " "*14, "-"*7, "-"*26, "-"*6))
+
+            if len(self.initial_state.container.quantities) == 1:
+                print(
+                    "\n{tspace}{tap:<4} | {cspace}{container} | {drain} {relationship} {tap:>7}{tspace} | "
+                    "{container}{cspace} | {drain}".format(
+                        tap="tap", container="cont.", drain="drain", relationship=" "*12,
+                        tspace=" "*2, cspace=" "*1
+                    )
+                )
+                print("{}+{}+{}{}{}+{}+{}".format("-" * 7, "-" * 8, "-" * 7, " " * 14, "-" * 9, "-" * 8, "-" * 6))
+
+    def _print_state_table_header(self, verbosity, states):
+        if verbosity > 1:
+            # Not beautiful but still in the scope of this project
+            if len(self.initial_state.container.quantities) == 3:
+                print("\n{pad} States found {pad}\n".format(pad="#"*14))
+                print("{tspace}{tap:<4} | {cspace}{container:<16} | {drain}".format(
+                        tap="tap", container="container", drain="drain", tspace=" "*2, cspace=" "*8
+                    )
+                )
+                print("{}+{}+{}".format("-"*7, "-"*26, "-"*7))
+                for state_id in states.keys():
+                    print(state_id)
+
+            if len(self.initial_state.container.quantities) == 1:
+                print("\n{pad} States found {pad}\n".format(pad="#" * 5))
+                print("{tspace}{tap:<4} | {cspace}{container} | {drain}".format(
+                    tap="tap", container="cont.", drain="drain", tspace=" " * 2, cspace=" " * 1
+                    )
+                )
+                print("{}+{}+{}".format("-" * 7, "-" * 8, "-" * 7))
+                for state_id in states.keys():
+                    print(state_id)
 
 class State:
     """

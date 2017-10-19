@@ -12,7 +12,6 @@ class Entity:
         self.quantity_names = quantities
         self.quantities = list(quantities.values())
         self.__dict__.update(quantities)
-        #vars(self).update(quantities)
 
     def __copy__(self):
         return type(self)(
@@ -25,7 +24,7 @@ class Container(Entity):
     Class representing a container.
     """
     def __init__(self, **quantities):
-        assert all([quantity in quantities for quantity in {"volume", "height", "pressure"}])
+        assert all([quantity in {"volume", "height", "pressure"} for quantity in quantities])
         super().__init__(**quantities)
 
 
