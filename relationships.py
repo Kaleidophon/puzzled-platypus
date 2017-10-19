@@ -170,13 +170,14 @@ class PositiveProportion(Proportion):
     def apply(self, state):
         quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
         quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
+
         if quantity1.derivative == "+" and quantity2.derivative != "+":
             new_state = copy.copy(state)
             new_quantity = self.get_quantity(new_state, self.entity_name2, self.quantity_name2)
             new_quantity.derivative += 1
             return self.relation, new_state
 
-        if quantity1.derivative == "-" and quantity2.derivative != "-":
+        elif quantity1.derivative == "-" and quantity2.derivative != "-":
             new_state = copy.copy(state)
             new_quantity = self.get_quantity(new_state, self.entity_name2, self.quantity_name2)
             new_quantity.derivative -= 1
@@ -193,8 +194,11 @@ class ValueCorrespondence(Relationship):
         self.magnitude1 = magnitude1
         self.magnitude2 = magnitude2
 
-    @abc.abstractmethod
     def apply(self, state):
+        raise NotImplemented
+
+    @abc.abstractmethod
+    def holds(self, state):
         pass
 
 
@@ -202,12 +206,11 @@ class VCmax(ValueCorrespondence):
     def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2):
         super().__init__(entity_name1, quantity_name1, "max", entity_name2, quantity_name2, "max", "VC_max")
 
-    def apply(self, state):
+    def holds(self, state):
         quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
         quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
 
-        # if quantity1.magnitude != "max" and quantity2.magnitude == "max":  # Raj's Interpretation
-        if quantity1.magnitude == "max" and quantity2.magnitude != "max":  # Dennis' Interpretation
+        if quantity1.magnitude != "max" or quantity2.magnitude == "max":
             # raise ConstraintEnforcementException("Enforcing VC max constraint.")
             return True
         return False
@@ -217,12 +220,11 @@ class VCzero(ValueCorrespondence):
     def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2):
         super().__init__(entity_name1, quantity_name1, "0", entity_name2, quantity_name2, "0", "VC_0")
 
-    def apply(self, state):
+    def holds(self, state):
         quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
         quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
 
-        # if quantity1.magnitude != "0" and quantity2.magnitude == "0":  # Raj's Interpretation
-        if quantity1.magnitude == "0" and quantity2.magnitude != "0":  # Dennis' Interpretation
+        if quantity1.magnitude != "0" or quantity2.magnitude == "0":
             # raise ConstraintEnforcementException("Enforcing VC zero constraint.")
             return True
         return False

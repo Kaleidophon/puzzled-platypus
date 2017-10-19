@@ -6,10 +6,6 @@ Module defining the state graph.
 # STD
 import copy
 
-# PROJECT
-from quantities import DiscontinuityException
-from relationships import ConstraintEnforcementException
-
 
 class StateGraph:
     """
@@ -35,30 +31,18 @@ class StateGraph:
         state_stack = [self.initial_state]
         discontinuities, constraints = 0, 0
 
-        if verbosity > 1:
-            print(
-                "\n{tspace}{tap:<4} | {cspace}{container:<16} | {drain} {relationship} {tap:>5}{tspace} | "
-                "{container:>16}{cspace} | {drain}".format(
-                    tap="tap", container="container", drain="drain", relationship=" "*12,
-                    tspace=" "*2, cspace=" "*8
-                )
-            )
-            print("{}+{}+{}{}{}+{}+{}".format("-"*7, "-"*26, "-"*7, " "*14, "-"*7, "-"*26, "-"*6))
+        self._print_transition_table_header(verbosity)
 
         while len(state_stack) != 0:
             current_state = state_stack.pop(0)
 
             implied_state = self._apply_consequences(current_state)
 
-            if current_state.readable_id != implied_state.readable_id:
-                transitions[(current_state.readable_id, "C?")] = implied_state
-                states[implied_state.readable_id] = implied_state
+            transitions[(current_state.readable_id, "C?")] = implied_state
+            states[implied_state.readable_id] = implied_state
 
-                if verbosity > 1:
-                    print("{:<27} --({})-->   {}".format(current_state.readable_id, "C?", implied_state.readable_id))
-
-            #if verbosity > 1:
-            #    print("Current state: {}".format(current_state))
+            if verbosity > 1:
+                print("{:<27} --({})-->   {}".format(current_state.readable_id, "C?", implied_state.readable_id))
 
             # Branch out
             branches = implied_state.apply_rules(self.rules)
@@ -81,19 +65,11 @@ class StateGraph:
             discontinuities += implied_state.discontinuity_counter
             constraints += implied_state.constraint_counter
 
-        if verbosity > 1:
-            print("\n{pad} States found {pad}\n".format(pad="#"*14))
-            print("{tspace}{tap:<4} | {cspace}{container:<16} | {drain}".format(
-                    tap="tap", container="container", drain="drain", tspace=" "*2, cspace=" "*8
-                )
-            )
-            print("{}+{}+{}".format("-"*7, "-"*26, "-"*7))
-            for state_id in states.keys():
-                print(state_id)
+        self._print_state_table_header(verbosity, states)
 
         if verbosity > 0:
             print("\n{} state(s) and {} transitions detected.".format(len(states), len(transitions)))
-            print("{} state(s) were prohibited due to discontinuities.".format(discontinuities))
+            #print("{} state(s) were prohibited due to discontinuities.".format(discontinuities))
             print("Constraints were enforced {} times.".format(constraints))
 
         return states, transitions
@@ -112,12 +88,12 @@ class StateGraph:
         constraint_counter = 0
 
         for rule, state in branches:
-            enforcements = [constraint.apply(state) for constraint in self.constraints]
+            feedbacks = [constraint.holds(state) for constraint in self.constraints]
 
-            if not any(enforcements):
+            if all(feedbacks):
                 constrained_branches.append((rule, state))
 
-            constraint_counter += enforcements.count(True)
+            constraint_counter += feedbacks.count(False)
 
         return constrained_branches, constraint_counter
 
@@ -131,6 +107,52 @@ class StateGraph:
         self.envision()
         _, transitions = self.envision()
         return transitions
+
+    def _print_transition_table_header(self, verbosity):
+        if verbosity > 1:
+            # Not beautiful but still in the scope of this project
+            if len(self.initial_state.container.quantities) == 3:
+                print(
+                    "\n{tspace}{tap:<4} | {cspace}{container:<16} | {drain} {relationship} {tap:>5}{tspace} | "
+                    "{container:>16}{cspace} | {drain}".format(
+                        tap="tap", container="container", drain="drain", relationship=" "*12,
+                        tspace=" "*2, cspace=" "*8
+                    )
+                )
+                print("{}+{}+{}{}{}+{}+{}".format("-"*7, "-"*26, "-"*7, " "*14, "-"*7, "-"*26, "-"*6))
+
+            if len(self.initial_state.container.quantities) == 1:
+                print(
+                    "\n{tspace}{tap:<4} | {cspace}{container} | {drain} {relationship} {tap:>7}{tspace} | "
+                    "{container}{cspace} | {drain}".format(
+                        tap="tap", container="cont.", drain="drain", relationship=" "*12,
+                        tspace=" "*2, cspace=" "*1
+                    )
+                )
+                print("{}+{}+{}{}{}+{}+{}".format("-" * 7, "-" * 8, "-" * 7, " " * 14, "-" * 9, "-" * 8, "-" * 6))
+
+    def _print_state_table_header(self, verbosity, states):
+        if verbosity > 1:
+            # Not beautiful but still in the scope of this project
+            if len(self.initial_state.container.quantities) == 3:
+                print("\n{pad} States found {pad}\n".format(pad="#"*14))
+                print("{tspace}{tap:<4} | {cspace}{container:<16} | {drain}".format(
+                        tap="tap", container="container", drain="drain", tspace=" "*2, cspace=" "*8
+                    )
+                )
+                print("{}+{}+{}".format("-"*7, "-"*26, "-"*7))
+                for state_id in states.keys():
+                    print(state_id)
+
+            if len(self.initial_state.container.quantities) == 1:
+                print("\n{pad} States found {pad}\n".format(pad="#" * 5))
+                print("{tspace}{tap:<4} | {cspace}{container} | {drain}".format(
+                    tap="tap", container="cont.", drain="drain", tspace=" " * 2, cspace=" " * 1
+                    )
+                )
+                print("{}+{}+{}".format("-" * 7, "-" * 8, "-" * 7))
+                for state_id in states.keys():
+                    print(state_id)
 
 
 class State:
@@ -163,17 +185,7 @@ class State:
         )
 
     def apply_rules(self, rules):
-        branches = []
-
-        for rule in rules:
-            try:
-                branches.append(rule.apply(self))
-            except DiscontinuityException:
-                self.discontinuity_counter += 1
-            #except ConstraintEnforcementException:
-            #    self.constraint_counter += 1
-
-        return branches
+        return [rule.apply(self) for rule in rules]
 
     def __copy__(self):
         return State(**dict(zip(self.entity_names, [copy.copy(entity) for entity in self.entities])))
