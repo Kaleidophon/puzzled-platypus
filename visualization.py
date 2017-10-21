@@ -18,34 +18,24 @@
 # dot.render('test-output/round-table.gv', view=True)
 
 # EXT
-import networkx as nx
-import matplotlib.pyplot as plt
+from graphviz import Digraph
 
 # PROJECT
 from graph import init_extra_points_state_graph, init_minimum_viable_state_graph
 
 
 if __name__ == "__main__":
-    graph = nx.Graph()
-    state_graph = init_minimum_viable_state_graph()
-
-    _nodes = state_graph.nodes
-    labels = {node: node.replace("|", "\n") for node in _nodes}
+    dot = Digraph(comment='The Round Table', format="png")
+    #state_graph = init_minimum_viable_state_graph()
+    state_graph = init_extra_points_state_graph()
 
     for node in state_graph.nodes:
-        graph.add_node(node)
+        a = node.replace(" | ", "\n").strip()
+        dot.node(node, node.replace(" | ", "\n").strip(), shape="box")
 
-    for start, label, end in state_graph.edges:
-        graph.add_edge(start, end)
+    for start, label, target in state_graph.edges:
+        dot.edge(start, target, label=label)
 
-    pos = nx.random_layout(graph, scale=5)
+    print(dot.source)
 
-    nx.draw_networkx_nodes(graph, pos, nodelist=_nodes, node_color="b", node_size=2750, alpha=0.5, node_shape="s", linewidths=0)
-    nx.draw_networkx_labels(graph, pos, labels, font_size=12)
-
-    nodes = state_graph.nodes
-    #nx.draw_networkx_labels(graph, pos, {i: node for i, node in zip(range(len(nodes), nodes))}, font_size=16)
-
-    # show graph
-    plt.axis("off")
-    plt.show()
+    dot.render('test-output/state_graph.png', view=True)

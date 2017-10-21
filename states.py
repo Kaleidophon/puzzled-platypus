@@ -38,7 +38,7 @@ class StateGraph:
 
             implied_state = self._apply_consequences(current_state)
 
-            transitions[(current_state.readable_id, "C?")] = implied_state
+            transitions[(current_state.readable_id, "C?")] = implied_state.readable_id
             states[implied_state.readable_id] = implied_state
 
             if verbosity > 1:
@@ -53,7 +53,7 @@ class StateGraph:
             constraints += local_constraint_counter
 
             for rule, new_state in branches:
-                transitions[(implied_state.readable_id, rule)] = new_state
+                transitions[(implied_state.readable_id, rule)] = new_state.readable_id
 
                 if verbosity > 1:
                     print("{:<27} --({})-->   {}".format(implied_state.readable_id, rule, new_state.readable_id))
