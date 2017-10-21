@@ -98,15 +98,15 @@ class StateGraph:
         return constrained_branches, constraint_counter
 
     @property
-    def edges(self):
+    def nodes(self):
         states, _ = self.envision()
-        return states
+        return list(states.keys())
 
     @property
-    def nodes(self):
+    def edges(self):
         self.envision()
         _, transitions = self.envision()
-        return transitions
+        return [(start, label, end) for (start, label), end in transitions.items()]
 
     def _print_transition_table_header(self, verbosity):
         if verbosity > 1:
