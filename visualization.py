@@ -26,12 +26,11 @@ from graph import init_extra_points_state_graph, init_minimum_viable_state_graph
 
 if __name__ == "__main__":
     dot = Digraph(comment='The Round Table', format="png")
-    #state_graph = init_minimum_viable_state_graph()
-    state_graph = init_extra_points_state_graph()
+    state_graph = init_minimum_viable_state_graph()
+    #state_graph = init_extra_points_state_graph()
 
-    for node in state_graph.nodes:
-        a = node.replace(" | ", "\n").strip()
-        dot.node(node, node.replace(" | ", "\n").strip(), shape="box")
+    for node_uid, node in state_graph.nodes:
+        dot.node(node_uid, node.readable_id, shape="box")
 
     for start, label, target in state_graph.edges:
         dot.edge(start, target, label=label)

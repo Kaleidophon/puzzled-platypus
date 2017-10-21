@@ -19,6 +19,11 @@ QUANTITY_SPACES = {
 }
 
 
+def get_global_quantity_index(quantity):
+    assert quantity in GLOBAL_QUANTITY_SPACE
+    return GLOBAL_QUANTITY_SPACE.index(quantity)
+
+
 class Quantifiable:
     """
     Class to model a magnitude or a derivative.

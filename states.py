@@ -6,6 +6,9 @@ Module defining the state graph.
 # STD
 import copy
 
+# PROJECT
+from quantities import get_global_quantity_index
+
 
 class StateGraph:
     """
@@ -26,7 +29,7 @@ class StateGraph:
         return self.states, self.transitions
 
     def _envision(self, verbosity=0):
-        states = {self.initial_state.readable_id: self.initial_state}
+        states = {self.initial_state.uid: self.initial_state}
         transitions = {}
         state_stack = [self.initial_state]
         discontinuities, constraints = 0, 0
@@ -38,8 +41,8 @@ class StateGraph:
 
             implied_state = self._apply_consequences(current_state)
 
-            transitions[(current_state.readable_id, "C?")] = implied_state.readable_id
-            states[implied_state.readable_id] = implied_state
+            transitions[(current_state.uid, "C?")] = implied_state.uid
+            states[implied_state.uid] = implied_state
 
             if verbosity > 1:
                 print("{:<27} --({})-->   {}".format(current_state.readable_id, "C?", implied_state.readable_id))
@@ -53,13 +56,13 @@ class StateGraph:
             constraints += local_constraint_counter
 
             for rule, new_state in branches:
-                transitions[(implied_state.readable_id, rule)] = new_state.readable_id
+                transitions[(implied_state.uid, rule)] = new_state.uid
 
                 if verbosity > 1:
                     print("{:<27} --({})-->   {}".format(implied_state.readable_id, rule, new_state.readable_id))
 
-                if new_state.readable_id not in states:
-                    states[new_state.readable_id] = new_state
+                if new_state.uid not in states:
+                    states[new_state.uid] = new_state
                     state_stack.append(new_state)
 
             discontinuities += implied_state.discontinuity_counter
@@ -100,7 +103,7 @@ class StateGraph:
     @property
     def nodes(self):
         states, _ = self.envision()
-        return list(states.keys())
+        return [(state.uid, state) for state in states.values()]
 
     @property
     def edges(self):
@@ -171,6 +174,21 @@ class State:
         return "<State: {}>".format(self.readable_id)
 
     @property
+    def uid(self):
+        return "".join(
+            [
+                "".join([
+                    "{}{}".format(
+                        get_global_quantity_index(quantity.magnitude),
+                        get_global_quantity_index(quantity.derivative)
+                    )
+                    for quantity in entity.quantities
+                ])
+                for entity in self.entities
+            ]
+        )
+
+    @property
     def readable_id(self):
         return "| ".join(
             [
@@ -180,6 +198,14 @@ class State:
                         for quantity in entity.quantities
                     ]
                 )
+                for entity in self.entities
+            ]
+        )
+
+    def __str__(self):
+        return "\n".join(
+            [
+                "({}) {}".format(entity.__class__.__name__, entity.fancy_repr)
                 for entity in self.entities
             ]
         )
