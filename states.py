@@ -41,8 +41,13 @@ class StateGraph:
 
             implied_state = self._apply_consequences(current_state)
 
-            transitions[(current_state.uid, "C?")] = implied_state.uid
-            states[implied_state.uid] = implied_state
+            if implied_state.uid != current_state.uid:
+                # Check if state resulting from a consequence is still a valid state
+                feedback, _ = self._apply_constraints([("C?", implied_state)])
+
+                if len(feedback) != 0:
+                    transitions[(current_state.uid, "C?")] = implied_state.uid
+                    states[implied_state.uid] = implied_state
 
             if verbosity > 1:
                 print("{:<27} --({})-->   {}".format(current_state.readable_id, "C?", implied_state.readable_id))
@@ -144,8 +149,6 @@ class StateGraph:
                     )
                 )
                 print("{}+{}+{}".format("-"*7, "-"*26, "-"*7))
-                for state_id in states.keys():
-                    print(state_id)
 
             if len(self.initial_state.container.quantities) == 1:
                 print("\n{pad} States found {pad}\n".format(pad="#" * 5))
@@ -154,8 +157,9 @@ class StateGraph:
                     )
                 )
                 print("{}+{}+{}".format("-" * 7, "-" * 8, "-" * 7))
-                for state_id in states.keys():
-                    print(state_id)
+
+        for state in states.values():
+            print(state.readable_id)
 
 
 class State:
