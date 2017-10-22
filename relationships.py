@@ -67,6 +67,8 @@ class PositiveConsequence(Reflexive):
             new_state = copy.copy(state)
             new_quantity = self.get_quantity(new_state, self.entity_name, self.quantity_name)
             new_quantity.magnitude += 1
+            if new_quantity.magnitude == "max":
+                new_quantity.derivative -= 1
             return new_state
 
 
@@ -80,6 +82,8 @@ class NegativeConsequence(Reflexive):
             new_state = copy.copy(state)
             new_quantity = self.get_quantity(new_state, self.entity_name, self.quantity_name)
             new_quantity.magnitude -= 1
+            if new_quantity.magnitude == "0":
+                new_quantity.derivative += 1
             return new_state
 
 
@@ -129,7 +133,8 @@ class PositiveInfluence(Influence):
     def apply(self, state):
         quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
         quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
-        if quantity1.magnitude != "0" and quantity2.derivative != "+":
+        if quantity1.magnitude != "0" and \
+                (quantity2.magnitude != "max" and quantity2.derivative != "+"):
             new_state = copy.copy(state)
             new_quantity = self.get_quantity(new_state, self.entity_name2, self.quantity_name2)
             new_quantity.derivative += 1
@@ -143,7 +148,8 @@ class NegativeInfluence(Influence):
     def apply(self, state):
         quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
         quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
-        if quantity1.magnitude != "0" and quantity2.derivative != "-":
+        if quantity1.magnitude != "0" and \
+                (quantity2.magnitude != "0" and quantity2.derivative != "-"):
             new_state = copy.copy(state)
             new_quantity = self.get_quantity(new_state, self.entity_name2, self.quantity_name2)
             new_quantity.derivative -= 1
@@ -171,13 +177,15 @@ class PositiveProportion(Proportion):
         quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
         quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
 
-        if quantity1.derivative == "+" and quantity2.derivative != "+":
+        if quantity1.derivative == "+" and \
+                (quantity2.magnitude != "max" and quantity2.derivative != "+"):
             new_state = copy.copy(state)
             new_quantity = self.get_quantity(new_state, self.entity_name2, self.quantity_name2)
             new_quantity.derivative += 1
             return self.relation, new_state
 
-        elif quantity1.derivative == "-" and quantity2.derivative != "-":
+        elif quantity1.derivative == "-" and \
+                (quantity2.magnitude != "0" and quantity2.derivative != "-"):
             new_state = copy.copy(state)
             new_quantity = self.get_quantity(new_state, self.entity_name2, self.quantity_name2)
             new_quantity.derivative -= 1
@@ -211,8 +219,7 @@ class VCmax(ValueCorrespondence):
         quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
 
         if quantity1.magnitude != "max" and \
-                        quantity2.magnitude == "max" and quantity2.derivative == "+":
-            # raise ConstraintEnforcementException("Enforcing VC max constraint.")
+                (quantity2.magnitude == "max" and quantity2.derivative == "+"):
             return False
         return True
 
@@ -226,7 +233,6 @@ class VCzero(ValueCorrespondence):
         quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
 
         if quantity1.magnitude != "0" and \
-                        quantity2.magnitude == "0" and quantity2.derivative == "0":
-            # raise ConstraintEnforcementException("Enforcing VC zero constraint.")
+                (quantity2.magnitude == "0" and quantity2.derivative == "-"):
             return False
         return True
