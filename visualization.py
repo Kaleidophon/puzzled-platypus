@@ -30,7 +30,7 @@ if __name__ == "__main__":
     #state_graph = init_extra_points_state_graph()
 
     for node_uid, node in state_graph.nodes:
-        dot.node(node_uid, node.readable_id, shape="box")
+        dot.node(node_uid, node.readable_id.replace(" | ", "\n"), shape="box")
 
     for start, label, target in state_graph.edges:
         dot.edge(start, target, label=label)

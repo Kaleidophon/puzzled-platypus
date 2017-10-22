@@ -15,8 +15,8 @@ from relationships import PositiveConsequence, NegativeConsequence, PositiveActi
 
 
 def main():
-    #state_graph = init_minimum_viable_state_graph()
-    state_graph = init_extra_points_state_graph()
+    state_graph = init_minimum_viable_state_graph()
+    #state_graph = init_extra_points_state_graph()
     state_graph.envision(verbosity=2)
 
 
