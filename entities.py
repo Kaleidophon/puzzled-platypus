@@ -13,6 +13,15 @@ class Entity:
         self.quantities = list(quantities.values())
         self.__dict__.update(quantities)
 
+    @property
+    def fancy_repr(self):
+        return " | ".join(
+            [
+                "M: {}, d: {}".format(quantity.magnitude, quantity.derivative)
+                for quantity in self.quantities
+            ]
+        )
+
     def __copy__(self):
         return type(self)(
             **dict(zip(self.quantity_names, [copy.copy(quantity) for quantity in self.quantities]))
