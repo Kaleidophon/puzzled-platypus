@@ -49,9 +49,12 @@ class StateGraph:
 
             # Get implied states and merge
             implied_states, implied_transitions = self._get_implied_states(current_state, verbosity)
-            state_stack.extend([state for state in implied_states.values() if state.uid not in states])
-            states = update_dict_safely(states, implied_states)
-            transitions = update_dict_safely(transitions, implied_transitions)
+
+            if len(implied_states) > 0:
+                state_stack.extend([state for state in implied_states.values() if state.uid not in states])
+                states = update_dict_safely(states, implied_states)
+                transitions = update_dict_safely(transitions, implied_transitions)
+                continue
 
             # Branch out
             branches = current_state.apply_rules(self.rules)
@@ -90,14 +93,14 @@ class StateGraph:
         implied_states, implied_transitions = {}, {}
         implied_states_backlog = [state]  # Implied states that still have to be tested but may not be valid
 
-        while len(implied_states_backlog) != 0:
-            current_implied_state = implied_states_backlog.pop(0)
+        #while len(implied_states_backlog) != 0:
+        current_implied_state = implied_states_backlog.pop(0)
 
-            for consequence in self.consequences:
-                possible_implied_state = consequence.apply(current_implied_state)
+        for consequence in self.consequences:
+            possible_implied_state = consequence.apply(current_implied_state)
 
-                if possible_implied_state is not None:
-
+            if possible_implied_state is not None:
+                if all(self._get_constraint_feedback(possible_implied_state)):
                     implied_state = possible_implied_state  # Implied state is valid
                     implied_transitions[(current_implied_state.uid, consequence.relation)] = implied_state.uid
                     implied_states[implied_state.uid] = implied_state
@@ -110,7 +113,7 @@ class StateGraph:
                         )
 
                     # Explore whether this state has some implied states in a later iteration
-                    implied_states_backlog.append(implied_state)
+                    #implied_states_backlog.append(implied_state)
 
         return implied_states, implied_transitions
 
