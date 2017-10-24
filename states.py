@@ -43,9 +43,8 @@ class StateGraph:
 
             if implied_state.uid != current_state.uid:
                 # Check if state resulting from a consequence is still a valid state
-                feedback, _ = self._apply_constraints([("C?", implied_state)])
 
-                if len(feedback) != 0:
+                if all(self._get_constraint_feedback(implied_state)):
                     transitions[(current_state.uid, "C?")] = implied_state.uid
                     states[implied_state.uid] = implied_state
                 else:
@@ -99,7 +98,7 @@ class StateGraph:
         constraint_counter = 0
 
         for rule, state in branches:
-            feedbacks = [constraint.holds(state) for constraint in self.constraints]
+            feedbacks = self._get_constraint_feedback(state)
 
             if all(feedbacks):
                 constrained_branches.append((rule, state))
@@ -107,6 +106,9 @@ class StateGraph:
             constraint_counter += feedbacks.count(False)
 
         return constrained_branches, constraint_counter
+
+    def _get_constraint_feedback(self, state):
+        return [constraint.holds(state) for constraint in self.constraints]
 
     @property
     def nodes(self):
