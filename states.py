@@ -19,6 +19,7 @@ class StateGraph:
 
     def __init__(self, initial_state, rules, consequences, constraints):
         self.initial_state = initial_state
+        self.entities = initial_state.entities
         self.rules = rules
         self.consequences = consequences
         self.constraints = constraints
