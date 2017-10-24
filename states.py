@@ -48,6 +48,9 @@ class StateGraph:
                 if len(feedback) != 0:
                     transitions[(current_state.uid, "C?")] = implied_state.uid
                     states[implied_state.uid] = implied_state
+                else:
+                    # The state that was created by applying the consequences is invalid; proceed with original state
+                    implied_state = current_state
 
             if verbosity > 1:
                 print("{:<27} --({})-->   {}".format(current_state.readable_id, "C?", implied_state.readable_id))
