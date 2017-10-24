@@ -35,6 +35,6 @@ if __name__ == "__main__":
     for start, label, target in state_graph.edges:
         dot.edge(start, target, label=label)
 
-    print(dot.source)
+    #print(dot.source)
 
-    dot.render('test-output/state_graph.png', view=True)
+    dot.render('test-output/state_graph', view=True)
