@@ -54,7 +54,7 @@ def visualize_causal_model(state_graph, super_entity="Super"):
             entity_name, entity_name,
             shape="box", fillcolor="#edd29a#edd29a", style="filled"
         )
-        dot.edge(entity_name, super_entity, label="part of", fontsize="10")
+        dot.edge(entity_name, super_entity, label="part of", fontsize="10", len="1.5")
 
         # Visualize quantities
         for quantity in entity.quantities:
@@ -64,7 +64,7 @@ def visualize_causal_model(state_graph, super_entity="Super"):
                 "{}\nM: {}  d: {}".format(quantity.model, quantity.magnitude, quantity.derivative),
                 shape="circle", fillcolor="#b3caef", style="filled", width="0.75", fontsize="10"
             )
-            dot.edge(entity_name, quantity_name)
+            dot.edge(entity_name, quantity_name, len="1.5")
 
     # Visualize dependencies
     for dependency in state_graph.rules:
@@ -73,7 +73,7 @@ def visualize_causal_model(state_graph, super_entity="Super"):
         else:
             start = dependency.entity_name1 + "." + dependency.quantity_name1
             end = dependency.entity_name2 + "." + dependency.quantity_name2
-        dot.edge(start, end, label=dependency.relation)
+        dot.edge(start, end, label=dependency.relation, len="1.5")
 
 
     # Visualize value correspondences

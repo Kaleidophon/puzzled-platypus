@@ -28,12 +28,15 @@ class Quantifiable:
     """
     Class to model a magnitude or a derivative.
     """
-    def __init__(self, value, quantity_space, quantity):
+    def __init__(self, value, quantity_space, strict=True):
+        self.init_stage = True  # Otherwise the assert-statement in __setattr__ will be triggered
         self.value = value
+        self.init_stage = False
+
+        self.strict = strict
         self.quantity_space = quantity_space
         self.space_ceil = len(quantity_space) - 1
         self.value_index = quantity_space.index(value)
-        self.quantity = quantity
 
     def is_max(self):
         return self.value_index == self.space_ceil
@@ -76,6 +79,12 @@ class Quantifiable:
             return str(self) == other
         return self == other
 
+    def __setattr__(self, key, value):
+        if key == "value" and not self.init_stage and self.strict:
+            assert abs(self.global_value_index - GLOBAL_QUANTITY_SPACE.index(value)) < 2, \
+                "Value assignment to Quantifiable would create a discontinuity"
+        super().__setattr__(key, value)
+
 
 class Quantity:
     """
@@ -97,12 +106,19 @@ class Quantity:
 
     def init_quantifiables(self, magnitude, derivative):
         # Wrap magnitude and derivative in Quantifiables for neat addition / subtraction functionalities
-        self.magnitude = Quantifiable(value=magnitude, quantity_space=self.quantity_space, quantity=self)
-        self.derivative = Quantifiable(value=derivative, quantity_space=QUANTITY_SPACE_DERIVATIVE, quantity=self)
+        self.magnitude = Quantifiable(value=magnitude, quantity_space=self.quantity_space)
+        self.derivative = Quantifiable(value=derivative, quantity_space=QUANTITY_SPACE_DERIVATIVE)
 
     def __copy__(self):
         return Quantity(self.model, str(self.magnitude), str(self.derivative))
 
     def __str__(self):
         return "{}, {}".format(self.magnitude, self.derivative)
+
+
+if __name__ == "__main__":
+    quant = Quantifiable("0", quantity_space=GLOBAL_QUANTITY_SPACE)
+    print(quant)
+    quant.value = "max"
+    print(quant)
 
