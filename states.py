@@ -35,7 +35,7 @@ class StateGraph:
         state_stack = [self.initial_state]
         discontinuities, constraints = 0, 0
 
-        self._print_transition_table_header(verbosity)
+        #self._print_transition_table_header(verbosity)
 
         while len(state_stack) != 0:
             current_state = state_stack.pop(0)
@@ -73,7 +73,7 @@ class StateGraph:
             #discontinuities += implied_state.discontinuity_counter
             #constraints += implied_state.constraint_counter
 
-        self._print_state_table_header(verbosity, states)
+        #self._print_state_table_header(verbosity, states)
 
         if verbosity > 0:
             print("\n{} state(s) and {} transitions detected.".format(len(states), len(transitions)))
@@ -208,7 +208,34 @@ class State:
         )
 
     def apply_rules(self, rules):
-        return [rule.apply(self) for rule in rules]
+        branches = []
+        valid_rules = [rule for rule in rules]
+        for rule in valid_rules:
+            if not rule.check_valid(self):
+                valid_rules.remove(rule)
+
+        # if not self.should_branch(valid_rules):
+        #     current_state = self
+        #     valid_rules = self.combine_rules(valid_rules)
+        #     for rule in valid_rules:
+        #         current_state = rule.apply(current_state)
+        #     branches.append(current_state)
+        # else:
+        #     branched_valid_rules = self.combine_rules(valid_rules)
+        #     for branch in branched_valid_rules:
+        #         current_state = self
+        #         for rule in branch:
+        #             current_state = rule.apply(current_state)
+        #         branches.append(current_state)
+
+        #return branches
+        return [valid_rule.apply(self) for valid_rule in valid_rules]
+
+    def should_branch(self, rules):
+        return False
+
+    def combine_rules(self, rules):
+        return rules
 
     def __copy__(self):
         return State(**dict(zip(self.entity_names, [copy.copy(entity) for entity in self.entities])))
