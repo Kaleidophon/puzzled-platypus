@@ -117,6 +117,12 @@ class Influence(Relationship):
         self.quantity_name2 = quantity_name2
         super().__init__(entity_name1, quantity_name1, entity_name2, quantity_name2, relation)
 
+    def check_valid(self, state):
+        quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
+        if quantity1.magnitude == "0":
+            return False
+        return True
+
     @abc.abstractmethod
     def apply(self, state):
         pass
@@ -159,6 +165,12 @@ class Proportion(Relationship):
         self.entity_name2 = entity_name2
         self.quantity_name2 = quantity_name2
         super().__init__(entity_name1, quantity_name1, entity_name2, quantity_name2, relation)
+
+    def check_valid(self, state):
+        quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
+        if quantity1.derivative == "0":
+            return False
+        return True
 
     @abc.abstractmethod
     def apply(self, state):
