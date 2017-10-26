@@ -41,27 +41,24 @@ class StateGraph:
             current_state = state_stack.pop(0)
 
             implied_state = self._apply_consequences(current_state)
+            implied_state = self._apply_constraints(implied_state)
 
-            if implied_state.uid != current_state.uid:
-                # Check if state resulting from a consequence is still a valid state
-
-                if all(self._get_constraint_feedback(implied_state)):
-                    transitions[(current_state.uid, "C?")] = implied_state.uid
-                    states[implied_state.uid] = implied_state
-                else:
-                    # The state that was created by applying the consequences is invalid; proceed with original state
-                    implied_state = current_state
+            #transitions[(current_state.uid, "C?")] = implied_state.uid
+            #states[implied_state.uid] = implied_state
 
             if verbosity > 1:
                 print("{:<27} --({})-->   {}".format(current_state.readable_id, "C?", implied_state.readable_id))
 
             # Branch out
             branches = implied_state.apply_rules(self.rules)
-            branches = [branch for branch in branches if branch is not None]  # Clean up
+            branches = [branch for branch in branches if branch is not None]
+            for branch in branches:
+                if branch is not None:
+                    branch = self._apply_constraints(branch)
 
             # Filter branches by applying constraints
-            branches, local_constraint_counter = self._apply_constraints(branches)
-            constraints += local_constraint_counter
+            #branches, local_constraint_counter = self._apply_constraints(branches)
+            #constraints += local_constraint_counter
 
             for rule, new_state in branches:
                 transitions[(implied_state.uid, rule)] = new_state.uid
@@ -73,20 +70,19 @@ class StateGraph:
                     states[new_state.uid] = new_state
                     state_stack.append(new_state)
 
-            discontinuities += implied_state.discontinuity_counter
-            constraints += implied_state.constraint_counter
+            #discontinuities += implied_state.discontinuity_counter
+            #constraints += implied_state.constraint_counter
 
         self._print_state_table_header(verbosity, states)
 
         if verbosity > 0:
             print("\n{} state(s) and {} transitions detected.".format(len(states), len(transitions)))
             #print("{} state(s) were prohibited due to discontinuities.".format(discontinuities))
-            print("Constraints were enforced {} times.".format(constraints))
+            #print("Constraints were enforced {} times.".format(constraints))
 
         return states, transitions
 
     def _apply_consequences(self, state):
-
         for consequence in self.consequences:
             applied_consequence = consequence.apply(state)
             if applied_consequence is not None:
@@ -94,22 +90,13 @@ class StateGraph:
 
         return state
 
-    def _apply_constraints(self, branches):
-        constrained_branches = []
-        constraint_counter = 0
+    def _apply_constraints(self, state):
+        for constraints in self.constraints:
+            applied_constraints = constraints.apply(state)
+            if applied_constraints is not None:
+                state = applied_constraints
 
-        for rule, state in branches:
-            feedbacks = self._get_constraint_feedback(state)
-
-            if all(feedbacks):
-                constrained_branches.append((rule, state))
-
-            constraint_counter += feedbacks.count(False)
-
-        return constrained_branches, constraint_counter
-
-    def _get_constraint_feedback(self, state):
-        return [constraint.holds(state) for constraint in self.constraints]
+        return state
 
     @property
     def nodes(self):

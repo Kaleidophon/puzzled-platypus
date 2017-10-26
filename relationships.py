@@ -67,8 +67,6 @@ class PositiveConsequence(Reflexive):
             new_state = copy.copy(state)
             new_quantity = self.get_quantity(new_state, self.entity_name, self.quantity_name)
             new_quantity.magnitude += 1
-            if new_quantity.magnitude == "max":
-                new_quantity.derivative -= 1
             return new_state
 
 
@@ -82,8 +80,6 @@ class NegativeConsequence(Reflexive):
             new_state = copy.copy(state)
             new_quantity = self.get_quantity(new_state, self.entity_name, self.quantity_name)
             new_quantity.magnitude -= 1
-            if new_quantity.magnitude == "0":
-                new_quantity.derivative += 1
             return new_state
 
 
@@ -202,8 +198,9 @@ class ValueCorrespondence(Relationship):
         self.magnitude1 = magnitude1
         self.magnitude2 = magnitude2
 
+    @abc.abstractmethod
     def apply(self, state):
-        raise NotImplemented
+        pass
 
     @abc.abstractmethod
     def holds(self, state):
@@ -218,10 +215,11 @@ class VCmax(ValueCorrespondence):
         quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
         quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
 
-        if quantity1.magnitude != "max" and \
-                (quantity2.magnitude == "max" and quantity2.derivative == "+"):
-            return False
-        return True
+        if quantity1.magnitude != "max" and quantity2.magnitude == "max":
+            new_state = copy.copy(state)
+            new_quantity = self.get_quantity(new_state, self.entity_name1, self.quantity_name1)
+            new_quantity.magnitude = "max"
+            return self.relation, new_state
 
 
 class VCzero(ValueCorrespondence):
@@ -232,7 +230,8 @@ class VCzero(ValueCorrespondence):
         quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
         quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
 
-        if quantity1.magnitude != "0" and \
-                (quantity2.magnitude == "0" and quantity2.derivative == "-"):
-            return False
-        return True
+        if quantity1.magnitude != "0" and quantity2.magnitude == "0":
+            new_state = copy.copy(state)
+            new_quantity = self.get_quantity(new_state, self.entity_name1, self.quantity_name1)
+            new_quantity.magnitude = "0"
+            return self.relation, new_state

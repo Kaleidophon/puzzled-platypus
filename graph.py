@@ -35,8 +35,8 @@ def init_minimum_viable_state_graph():
 
     # Set up rules
     rules = [
-        PositiveAction("tap", "inflow"),
-        NegativeAction("tap", "inflow"),
+        #PositiveAction("tap", "inflow"),
+        #NegativeAction("tap", "inflow"),
         PositiveInfluence("tap", "inflow", "container", "volume"),
         NegativeInfluence("drain", "outflow", "container", "volume"),
         PositiveProportion("container", "volume", "drain", "outflow"),
