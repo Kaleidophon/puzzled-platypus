@@ -8,6 +8,7 @@ import copy
 
 # PROJECT
 from quantities import get_global_quantity_index
+from relationships import Consequence
 
 
 class StateGraph:
@@ -17,15 +18,14 @@ class StateGraph:
     states = None
     transitions = None
 
-    def __init__(self, initial_state, rules, consequences, constraints):
+    def __init__(self, initial_state, inter_state, intra_state):
         self.initial_state = initial_state
         self.entities = initial_state.entities
-        self.rules = rules
-        self.consequences = consequences
-        self.constraints = constraints
+        self.inter_state = inter_state  # Inter-state relationships
+        self.intra_state = intra_state  # Intra-state relationships
 
     def envision(self, verbosity=0):
-        if not (self.states or self.transitions):
+        if not (self.states or self.transitions):  # Do some caching of results
             self.states, self.transitions = self._envision(verbosity=verbosity)
         return self.states, self.transitions
 
@@ -33,35 +33,31 @@ class StateGraph:
         states = {self.initial_state.uid: self.initial_state}
         transitions = {}
         state_stack = [self.initial_state]
-        discontinuities, constraints = 0, 0
 
         self._print_transition_table_header(verbosity)
 
         while len(state_stack) != 0:
             current_state = state_stack.pop(0)
 
+            # Step 1: Apply consequences
             implied_state = self._apply_consequences(current_state)
 
-            if implied_state.uid != current_state.uid:
-                # Check if state resulting from a consequence is still a valid state
+            # Step 2: Apply value correspondences if possible
+            # TODO: [DU 26.10.17]
 
-                if all(self._get_constraint_feedback(implied_state)):
-                    transitions[(current_state.uid, "C?")] = implied_state.uid
-                    states[implied_state.uid] = implied_state
-                else:
-                    # The state that was created by applying the consequences is invalid; proceed with original state
-                    implied_state = current_state
+            # Step 3: Aggregate incoming influences and proportionalities for every entity
+            # TODO: [DU 26.10.17]
 
-            if verbosity > 1:
-                print("{:<27} --({})-->   {}".format(current_state.readable_id, "C?", implied_state.readable_id))
+            # Step 4: Perform derivative calculus and update quantities
+            # TODO: [DU 26.10.17]
 
-            # Branch out
-            branches = implied_state.apply_rules(self.rules)
-            branches = [branch for branch in branches if branch is not None]  # Clean up
+            # Step 5: Branch if necessary
+            # TODO: [DU 26.10.17]
+            # print("{:<27} --({})-->   {}".format(current_state.readable_id, "C?", implied_state.readable_id))
+            branches = []
 
-            # Filter branches by applying constraints
-            branches, local_constraint_counter = self._apply_constraints(branches)
-            constraints += local_constraint_counter
+            # Step 6: Apply value correspondences again if possible
+            # TODO: [DU 26.10.17]
 
             for rule, new_state in branches:
                 transitions[(implied_state.uid, rule)] = new_state.uid
@@ -72,16 +68,11 @@ class StateGraph:
                 if new_state.uid not in states:
                     states[new_state.uid] = new_state
                     state_stack.append(new_state)
-
-            discontinuities += implied_state.discontinuity_counter
-            constraints += implied_state.constraint_counter
-
         self._print_state_table_header(verbosity, states)
 
         if verbosity > 0:
             print("\n{} state(s) and {} transitions detected.".format(len(states), len(transitions)))
             #print("{} state(s) were prohibited due to discontinuities.".format(discontinuities))
-            print("Constraints were enforced {} times.".format(constraints))
 
         return states, transitions
 
@@ -94,22 +85,9 @@ class StateGraph:
 
         return state
 
-    def _apply_constraints(self, branches):
-        constrained_branches = []
-        constraint_counter = 0
-
-        for rule, state in branches:
-            feedbacks = self._get_constraint_feedback(state)
-
-            if all(feedbacks):
-                constrained_branches.append((rule, state))
-
-            constraint_counter += feedbacks.count(False)
-
-        return constrained_branches, constraint_counter
-
-    def _get_constraint_feedback(self, state):
-        return [constraint.holds(state) for constraint in self.constraints]
+    @property
+    def consequences(self):
+        return [relationship for relationship in self.intra_state if isinstance(relationship, Consequence)]
 
     @property
     def nodes(self):

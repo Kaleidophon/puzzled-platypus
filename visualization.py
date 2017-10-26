@@ -1,28 +1,13 @@
-# from graphviz import Digraph
-# #Add the path of graphviz to render the graph
-# import os
-# os.environ["PATH"] += os.pathsep + 'C:/Program Files/graphviz-2.38/bin'
-#
-# dot = Digraph(comment='The Round Table')
-# #add nodes
-# dot.node('I', 'Inflow')
-# dot.node('V', 'Volume')
-# dot.node('O', 'Outflow')
-# #add edges
-# dot.edge('I', 'V', label='I+')
-# dot.edge('V', 'O', label='P+')
-# dot.edge('O', 'V', label="I-")
-# #print the graph
-# print(dot.source)
-# #view graph
-# dot.render('test-output/round-table.gv', view=True)
+# -*- coding: utf-8 -*-
+"""
+Module defining ways to visalize the state graph and the causal model.
+"""
 
 # EXT
 from graphviz import Digraph
 
 # PROJECT
 from graph import init_extra_points_state_graph, init_minimum_viable_state_graph
-from relationships import PositiveAction, NegativeAction
 
 
 def visualize_state_graph(state_graph):
@@ -68,11 +53,8 @@ def visualize_causal_model(state_graph, super_entity="Super"):
 
     # Visualize dependencies
     for dependency in state_graph.rules:
-        if type(dependency) in (PositiveAction, NegativeAction):
-            start = end = dependency.entity_name + "." + dependency.quantity_name
-        else:
-            start = dependency.entity_name1 + "." + dependency.quantity_name1
-            end = dependency.entity_name2 + "." + dependency.quantity_name2
+        start = dependency.entity_name1 + "." + dependency.quantity_name1
+        end = dependency.entity_name2 + "." + dependency.quantity_name2
         dot.edge(start, end, label=dependency.relation, len="1.5")
 
 

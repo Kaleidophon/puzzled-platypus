@@ -22,10 +22,6 @@ QUANTITY_RELATIONSHIPS = {
 }
 
 
-class ConstraintEnforcementException(Exception):
-    pass
-
-
 class Relationship:
 
     def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2, relation):
@@ -57,7 +53,13 @@ class Reflexive(Relationship):
         pass
 
 
-class PositiveConsequence(Reflexive):
+class Consequence(Reflexive):
+    @abc.abstractmethod
+    def apply(self, state):
+        pass
+
+
+class PositiveConsequence(Consequence):
     def __init__(self, entity_name, quantity_name):
         super().__init__(entity_name, quantity_name, "C+")
 
@@ -72,7 +74,7 @@ class PositiveConsequence(Reflexive):
             return new_state
 
 
-class NegativeConsequence(Reflexive):
+class NegativeConsequence(Consequence):
     def __init__(self, entity_name, quantity_name):
         super().__init__(entity_name, quantity_name, "C-")
 
@@ -85,32 +87,6 @@ class NegativeConsequence(Reflexive):
             if new_quantity.magnitude == "0":
                 new_quantity.derivative += 1
             return new_state
-
-
-class PositiveAction(Reflexive):
-    def __init__(self, entity_name, quantity_name):
-        super().__init__(entity_name, quantity_name, "A+")
-
-    def apply(self, state):
-        quantity = self.get_quantity(state, self.entity_name, self.quantity_name)
-        if not quantity.derivative.is_max():
-            new_state = copy.copy(state)
-            new_quantity = self.get_quantity(new_state, self.entity_name, self.quantity_name)
-            new_quantity.derivative += 1
-            return self.relation, new_state
-
-
-class NegativeAction(Reflexive):
-    def __init__(self, entity_name, quantity_name):
-        super().__init__(entity_name, quantity_name, "A-")
-
-    def apply(self, state):
-        quantity = self.get_quantity(state, self.entity_name, self.quantity_name)
-        if not quantity.derivative.is_min():
-            new_state = copy.copy(state)
-            new_quantity = self.get_quantity(new_state, self.entity_name, self.quantity_name)
-            new_quantity.derivative -= 1
-            return self.relation, new_state
 
 
 class Influence(Relationship):
@@ -193,8 +169,8 @@ class PositiveProportion(Proportion):
 
 
 class ValueCorrespondence(Relationship):
-    def __init__(self, entity_name1, quantity_name1, magnitude1, entity_name2, quantity_name2, magnitude2, constraint):
-        super().__init__(entity_name1, quantity_name1, entity_name2, quantity_name2, relation=constraint)
+    def __init__(self, entity_name1, quantity_name1, magnitude1, entity_name2, quantity_name2, magnitude2, vc):
+        super().__init__(entity_name1, quantity_name1, entity_name2, quantity_name2, relation=vc)
         self.entity_name1 = entity_name1
         self.quantity_name1 = quantity_name1
         self.entity_name2 = entity_name2
@@ -205,16 +181,12 @@ class ValueCorrespondence(Relationship):
     def apply(self, state):
         raise NotImplemented
 
-    @abc.abstractmethod
-    def holds(self, state):
-        pass
-
 
 class VCmax(ValueCorrespondence):
     def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2):
         super().__init__(entity_name1, quantity_name1, "max", entity_name2, quantity_name2, "max", "VC_max")
 
-    def holds(self, state):
+    def apply(self, state):
         quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
         quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
 
@@ -228,7 +200,7 @@ class VCzero(ValueCorrespondence):
     def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2):
         super().__init__(entity_name1, quantity_name1, "0", entity_name2, quantity_name2, "0", "VC_0")
 
-    def holds(self, state):
+    def apply(self, state):
         quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
         quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
 

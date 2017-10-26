@@ -124,9 +124,3 @@ class Quantity:
             self.derivative.value = value
         else:
             super().__setattr__(key, value)
-
-
-if __name__ == "__main__":
-    quant = Quantity(model="inflow")
-    quant.magnitude = "max"
-
