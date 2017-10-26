@@ -13,6 +13,13 @@ class Entity:
         self.quantities = list(quantities.values())
         self.__dict__.update(quantities)
 
+    def update(self):
+        """
+        Update quantities based on the aggregated effects.
+        """
+        for quantity in self.quantities:
+            quantity.update()
+
     @property
     def fancy_repr(self):
         return " | ".join(

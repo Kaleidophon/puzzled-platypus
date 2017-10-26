@@ -18,6 +18,18 @@ QUANTITY_SPACES = {
     "height": QUANTITY_SPACE_HEIGHT
 }
 
+ADDITION_TABLE = {
+    ("-", "-"): "-",
+    ("-", "0"): "-",
+    ("0", "-"): "-",
+    ("-", "+"): "?",
+    ("0", "0"): "0",
+    ("0", "+"): "+",
+    ("+", "+"): "+",
+    ("+", "-"): "?",
+    ("+", "0"): "+"
+}
+
 
 def get_global_quantity_index(quantity):
     assert quantity in GLOBAL_QUANTITY_SPACE
@@ -93,6 +105,8 @@ class Quantity:
     magnitude = None
     derivative = None
     init_phase = True
+    aggregations = {}
+    aggregated = False
 
     def __init__(self, model, magnitude="0", derivative="0"):
         assert model in QUANTITY_SPACES.keys(), "Unknown model"
@@ -110,6 +124,15 @@ class Quantity:
         self.magnitude = Quantifiable(value=magnitude, quantity_space=self.quantity_space)
         self.derivative = Quantifiable(value=derivative, quantity_space=QUANTITY_SPACE_DERIVATIVE)
         self.init_phase = False
+
+    def aggregate(self, relationship, effect):
+        self.aggregations[relationship] = effect
+        self.aggregated = True
+
+    def update(self):
+        assert self.aggregated, "Aggregate step hasn't been performed recently"
+        # TODO: Perform derivative calculus here [DU 26.10.17]
+        pass
 
     def __copy__(self):
         return Quantity(self.model, str(self.magnitude), str(self.derivative))

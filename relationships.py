@@ -24,17 +24,21 @@ QUANTITY_RELATIONSHIPS = {
 
 class Relationship:
 
-    def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2, relation):
-        assert relation in QUANTITY_RELATIONSHIPS, "Unknown relationship"
-        self.entity1 = entity_name1
-        self.entity2 = entity_name2
-        self.quantity1 = quantity_name1
-        self.quantity2 = quantity_name2
-        self.relation = relation
+    def __init__(self, source, target, name):
+        assert name in QUANTITY_RELATIONSHIPS, "Unknown relationship"
+        self.source_entity_name, self.source_quantity_name = source.split(".")
+        self.target_entity_name, self.target_quantity_name = target.split(".")
+        self.name = name
 
     @abc.abstractmethod
     def apply(self, state):
         pass
+
+    def source_quantity(self, state):
+        return self.get_quantity(state, self.source_entity_name, self.source_quantity_name)
+
+    def target_quantity(self, state):
+        return self.get_quantity(state, self.target_entity_name, self.target_quantity_name)
 
     @staticmethod
     def get_quantity(state, entity_name, quantity_name):
@@ -43,10 +47,12 @@ class Relationship:
 
 
 class Reflexive(Relationship):
-    def __init__(self, entity_name, quantity_name, relation):
-        self.entity_name = entity_name
-        self.quantity_name = quantity_name
-        super().__init__(entity_name, quantity_name, entity_name, quantity_name, relation)
+    def __init__(self, target, name):
+        self.entity_name, self.quantity_name = target.split(".")
+        super().__init__(source=target, target=target, name=name)
+
+    def quantity(self, state):
+        return super().source_quantity(state)
 
     @abc.abstractmethod
     def apply(self, state):
@@ -60,151 +66,133 @@ class Consequence(Reflexive):
 
 
 class PositiveConsequence(Consequence):
-    def __init__(self, entity_name, quantity_name):
-        super().__init__(entity_name, quantity_name, "C+")
+    def __init__(self, target):
+        super().__init__(target, "C+")
 
     def apply(self, state):
-        quantity = self.get_quantity(state, self.entity_name, self.quantity_name)
+        quantity = self.quantity(state)
+
         if quantity.derivative == "+" and not quantity.magnitude.is_max():
-            new_state = copy.copy(state)
-            new_quantity = self.get_quantity(new_state, self.entity_name, self.quantity_name)
-            new_quantity.magnitude += 1
-            if new_quantity.magnitude == "max":
-                new_quantity.derivative -= 1
-            return new_state
+            quantity.magnitude += 1
+
+            if quantity.magnitude == "max":
+                quantity.derivative -= 1
+
+        return state
 
 
 class NegativeConsequence(Consequence):
-    def __init__(self, entity_name, quantity_name):
-        super().__init__(entity_name, quantity_name, "C-")
+    def __init__(self, target):
+        super().__init__(target, "C-")
 
     def apply(self, state):
-        quantity = self.get_quantity(state, self.entity_name, self.quantity_name)
+        quantity = self.quantity(state)
+
         if quantity.derivative == "-" and not quantity.magnitude.is_min():
-            new_state = copy.copy(state)
-            new_quantity = self.get_quantity(new_state, self.entity_name, self.quantity_name)
-            new_quantity.magnitude -= 1
-            if new_quantity.magnitude == "0":
-                new_quantity.derivative += 1
-            return new_state
+            quantity.magnitude -= 1
+            if quantity.magnitude == "0":
+                quantity.derivative += 1
+
+        return state
 
 
-class Influence(Relationship):
-    def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2, relation):
-        self.entity_name1 = entity_name1
-        self.quantity_name1 = quantity_name1
-        self.entity_name2 = entity_name2
-        self.quantity_name2 = quantity_name2
-        super().__init__(entity_name1, quantity_name1, entity_name2, quantity_name2, relation)
-
+class InterStateRelationship(Relationship):
     @abc.abstractmethod
     def apply(self, state):
         pass
 
-
-class PositiveInfluence(Influence):
-    def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2):
-        super().__init__(entity_name1, quantity_name1, entity_name2, quantity_name2, "I+")
-
-    def apply(self, state):
-        quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
-        quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
-        if quantity1.magnitude != "0" and \
-                (quantity2.magnitude != "max" and quantity2.derivative != "+"):
-            new_state = copy.copy(state)
-            new_quantity = self.get_quantity(new_state, self.entity_name2, self.quantity_name2)
-            new_quantity.derivative += 1
-            return self.relation, new_state
+    def propagate_effect(self, state, effect):
+        quantity = self.target_quantity(state)
+        quantity.aggregate(self.name, effect)
 
 
-class NegativeInfluence(Influence):
-    def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2):
-        super().__init__(entity_name1, quantity_name1, entity_name2, quantity_name2, "I-")
+class PositiveInfluence(Relationship):
+    def __init__(self, source, target):
+        super().__init__(source, target, name="I+")
 
     def apply(self, state):
-        quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
-        quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
-        if quantity1.magnitude != "0" and \
-                (quantity2.magnitude != "0" and quantity2.derivative != "-"):
-            new_state = copy.copy(state)
-            new_quantity = self.get_quantity(new_state, self.entity_name2, self.quantity_name2)
-            new_quantity.derivative -= 1
-            return self.relation, new_state
+        source_quantity = self.source_quantity(state)
+        target_quantity = self.target_quantity(state)
+
+        if source_quantity.magnitude != "0" and \
+                (target_quantity.magnitude != "max" and target_quantity.derivative != "+"):
+
+            target_quantity.derivative += 1
+
+        return state
 
 
-class Proportion(Relationship):
-    def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2, relation):
-        self.entity_name1 = entity_name1
-        self.quantity_name1 = quantity_name1
-        self.entity_name2 = entity_name2
-        self.quantity_name2 = quantity_name2
-        super().__init__(entity_name1, quantity_name1, entity_name2, quantity_name2, relation)
-
-    @abc.abstractmethod
-    def apply(self, state):
-        pass
-
-
-class PositiveProportion(Proportion):
-    def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2):
-        super().__init__(entity_name1, quantity_name1, entity_name2, quantity_name2, "P+")
+class NegativeInfluence(Relationship):
+    def __init__(self, source, target):
+        super().__init__(source, target, name="I-")
 
     def apply(self, state):
-        quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
-        quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
+        source_quantity = self.source_quantity(state)
+        target_quantity = self.target_quantity(state)
 
-        if quantity1.derivative == "+" and \
-                (quantity2.magnitude != "max" and quantity2.derivative != "+"):
-            new_state = copy.copy(state)
-            new_quantity = self.get_quantity(new_state, self.entity_name2, self.quantity_name2)
-            new_quantity.derivative += 1
-            return self.relation, new_state
+        if source_quantity.magnitude != "0" and \
+                (target_quantity.magnitude != "0" and target_quantity.derivative != "-"):
 
-        elif quantity1.derivative == "-" and \
-                (quantity2.magnitude != "0" and quantity2.derivative != "-"):
-            new_state = copy.copy(state)
-            new_quantity = self.get_quantity(new_state, self.entity_name2, self.quantity_name2)
-            new_quantity.derivative -= 1
-            return self.relation, new_state
+            target_quantity.derivative -= 1
+
+        return state
+
+
+class PositiveProportion(Relationship):
+    def __init__(self, source, target):
+        super().__init__(source, target, name="P+")
+
+    def apply(self, state):
+        source_quantity = self.source_quantity(state)
+        target_quantity = self.target_quantity(state)
+
+        if source_quantity.derivative == "+" and \
+                (target_quantity.magnitude != "max" and target_quantity.derivative != "+"):
+            target_quantity.derivative += 1
+
+        elif source_quantity.derivative == "-" and \
+                (target_quantity.magnitude != "0" and target_quantity.derivative != "-"):
+            target_quantity.derivative -= 1
+
+        return state
 
 
 class ValueCorrespondence(Relationship):
-    def __init__(self, entity_name1, quantity_name1, magnitude1, entity_name2, quantity_name2, magnitude2, vc):
-        super().__init__(entity_name1, quantity_name1, entity_name2, quantity_name2, relation=vc)
-        self.entity_name1 = entity_name1
-        self.quantity_name1 = quantity_name1
-        self.entity_name2 = entity_name2
-        self.quantity_name2 = quantity_name2
-        self.magnitude1 = magnitude1
-        self.magnitude2 = magnitude2
+    def __init__(self, source, target, source_magnitude, target_magnitude, name):
+        super().__init__(source, target, name)
+        self.source_magnitude = source_magnitude
+        self.target_magnitude = target_magnitude
 
+    @abc.abstractmethod
     def apply(self, state):
-        raise NotImplemented
+        pass
 
 
 class VCmax(ValueCorrespondence):
-    def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2):
-        super().__init__(entity_name1, quantity_name1, "max", entity_name2, quantity_name2, "max", "VC_max")
+    def __init__(self, source, target):
+        super().__init__(source, target, source_magnitude="max", target_magnitude="max", name="VC_max")
 
     def apply(self, state):
-        quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
-        quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
+        source_quantity = self.source_quantity(state)
+        target_quantity = self.target_quantity(state)
 
-        if quantity1.magnitude != "max" and \
-                (quantity2.magnitude == "max" and quantity2.derivative == "+"):
+        # TODO: Rewrite this to correspond to new logic [DU 26.10.17]
+        if source_quantity.magnitude != "max" and \
+                (target_quantity.magnitude == "max" and target_quantity.derivative == "+"):
             return False
         return True
 
 
 class VCzero(ValueCorrespondence):
-    def __init__(self, entity_name1, quantity_name1, entity_name2, quantity_name2):
-        super().__init__(entity_name1, quantity_name1, "0", entity_name2, quantity_name2, "0", "VC_0")
+    def __init__(self, source, target):
+        super().__init__(source, target, source_magnitude="0", target_magnitude="0", name="VC_0")
 
     def apply(self, state):
-        quantity1 = self.get_quantity(state, self.entity_name1, self.quantity_name1)
-        quantity2 = self.get_quantity(state, self.entity_name2, self.quantity_name2)
+        source_quantity = self.source_quantity(state)
+        target_quantity = self.target_quantity(state)
 
-        if quantity1.magnitude != "0" and \
-                (quantity2.magnitude == "0" and quantity2.derivative == "-"):
+        # TODO: Rewrite this to correspond to new logic [DU 26.10.17]
+        if source_quantity.magnitude != "0" and \
+                (target_quantity.magnitude == "0" and target_quantity.derivative == "-"):
             return False
         return True

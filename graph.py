@@ -6,12 +6,16 @@ Module defining our project's causal graph.
 # PROJECT
 from quantities import Quantity
 from entities import Tap, Container, Drain
-from states import (
-    StateGraph,
-    State
+from states import StateGraph, State
+from relationships import (
+    PositiveConsequence,
+    NegativeConsequence,
+    PositiveInfluence,
+    NegativeInfluence,
+    PositiveProportion,
+    VCmax,
+    VCzero
 )
-from relationships import PositiveConsequence, NegativeConsequence, PositiveAction, NegativeAction, PositiveInfluence, \
-    NegativeInfluence, PositiveProportion, VCmax, VCzero
 
 
 def main():
@@ -35,19 +39,19 @@ def init_minimum_viable_state_graph():
 
     # Set up relationships
     inter_state = [
-        PositiveInfluence("tap", "inflow", "container", "volume"),
-        NegativeInfluence("drain", "outflow", "container", "volume"),
-        PositiveProportion("container", "volume", "drain", "outflow")
+        PositiveInfluence(source="tap.inflow", target="container.volume"),
+        NegativeInfluence(source="drain.outflow", target="container.volume"),
+        PositiveProportion(source="container.volume", target="drain.outflow")
     ]
     intra_state = [
-        PositiveConsequence("tap", "inflow"),
-        NegativeConsequence("tap", "inflow"),
-        PositiveConsequence("container", "volume"),
-        NegativeConsequence("container", "volume"),
-        PositiveConsequence("drain", "outflow"),
-        NegativeConsequence("drain", "outflow"),
-        VCmax("container", "volume", "drain", "outflow"),
-        VCzero("container", "volume", "drain", "outflow")
+        PositiveConsequence(target="tap.inflow"),
+        NegativeConsequence(target="tap.inflow"),
+        PositiveConsequence(target="container.volume"),
+        NegativeConsequence(target="container.volume"),
+        PositiveConsequence(target="drain.outflow"),
+        NegativeConsequence(target="drain.outflow"),
+        VCmax(source="container.volume", target="drain.outflow"),
+        VCzero(source="container.volume", target="drain.outflow")
     ]
 
     # Create initial state
@@ -75,29 +79,29 @@ def init_extra_points_state_graph():
 
     # Set up rules
     inter_state = [
-        PositiveInfluence("tap", "inflow", "container", "volume"),
-        NegativeInfluence("drain", "outflow", "container", "volume"),
-        PositiveProportion("container", "volume", "container", "height"),
-        PositiveProportion("container", "height", "container", "pressure"),
-        PositiveProportion("container", "pressure", "drain", "outflow"),
+        PositiveInfluence(source="tap.inflow", target="container.volume"),
+        NegativeInfluence(source="drain.outflow", target="container.volume"),
+        PositiveProportion(source="container.volume", target="container.height"),
+        PositiveProportion(source="container.height", target="container.pressure"),
+        PositiveProportion(source="container.pressure", target="drain.outflow"),
     ]
     intra_state = [
-        PositiveConsequence("tap", "inflow"),
-        NegativeConsequence("tap", "inflow"),
-        PositiveConsequence("container", "volume"),
-        NegativeConsequence("container", "volume"),
-        PositiveConsequence("container", "height"),
-        NegativeConsequence("container", "height"),
-        PositiveConsequence("container", "pressure"),
-        NegativeConsequence("container", "pressure"),
-        PositiveConsequence("drain", "outflow"),
-        NegativeConsequence("drain", "outflow"),
-        VCmax("container", "height", "container", "pressure"),
-        VCzero("container", "height", "container", "pressure"),
-        VCmax("container", "volume", "container", "height"),
-        VCzero("container", "volume", "container", "height"),
-        VCmax("container", "pressure", "drain", "outflow"),
-        VCzero("container", "pressure", "drain", "outflow")
+        PositiveConsequence(target="tap.inflow"),
+        NegativeConsequence(target="tap.inflow"),
+        PositiveConsequence(target="container.volume"),
+        NegativeConsequence(target="container.volume"),
+        PositiveConsequence(target="container.height"),
+        NegativeConsequence(target="container.height"),
+        PositiveConsequence(target="container.pressure"),
+        NegativeConsequence(target="container.pressure"),
+        PositiveConsequence(target="drain.outflow"),
+        NegativeConsequence(target="drain.outflow"),
+        VCmax(source="container.height", target="container.pressure"),
+        VCzero(source="container.height", target="container.pressure"),
+        VCmax(source="container.volume", target="container.height"),
+        VCzero(source="container.volume", target="container.height"),
+        VCmax(source="container.pressure", target="drain.outflow"),
+        VCzero(source="container.pressure", target="drain.outflow")
     ]
 
     # Create initial state
