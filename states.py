@@ -43,37 +43,20 @@ class StateGraph:
             implied_state = self._apply_consequences(current_state)
             implied_state = self._apply_constraints(implied_state)
 
-            #transitions[(current_state.uid, "C?")] = implied_state.uid
-            #states[implied_state.uid] = implied_state
-
             if verbosity > 1:
                 print("{:<27} --({})-->   {}".format(current_state.readable_id, "C?", implied_state.readable_id))
 
             # Branch out
             branches = implied_state.apply_rules(self.rules)
             if branches is not None:
-                for branch in branches:
-                    branch[1] = branch[1]._apply_constraints(implied_state)
-
-            branches = [branch for branch in branches if branch is not None]
-            #for branch in branches:
-            #    if branch is not None:
-            #        branches[branch] = self._apply_constraints(branch)
-
-            # Filter branches by applying constraints
-            #branches, local_constraint_counter = self._apply_constraints(branches)
-            #constraints += local_constraint_counter
-
-            for rule, new_state in branches:
-                # transitions[(implied_state.uid, rule)] = new_state.uid
-
-                #if verbosity > 1:
-                #    print("{:<27} --({})-->   {}".format(implied_state.readable_id, rule, new_state.readable_id))
-
-                if new_state.uid not in states:
-                    transitions[(implied_state.uid, rule)] = new_state.uid
-                    states[new_state.uid] = new_state
-                    state_stack.append(new_state)
+                for rule, new_state in branches:
+                    #if verbosity > 1:
+                    #    print("{:<27} --({})-->   {}".format(implied_state.readable_id, rule, new_state.readable_id))
+                    new_state = self._apply_constraints(new_state)
+                    if new_state.uid not in states:
+                        transitions[(implied_state.uid, rule)] = new_state.uid
+                        states[new_state.uid] = new_state
+                        state_stack.append(new_state)
 
             #discontinuities += implied_state.discontinuity_counter
             #constraints += implied_state.constraint_counter
@@ -96,8 +79,8 @@ class StateGraph:
         return state
 
     def _apply_constraints(self, state):
-        for constraints in self.constraints:
-            applied_constraints = constraints.apply(state)
+        for constraint in self.constraints:
+            applied_constraints = constraint.holds(state)
             if applied_constraints is not None:
                 state = applied_constraints
 
@@ -214,15 +197,16 @@ class State:
 
     def apply_rules(self, rules):
         branches = []
-        # valid_rules = [rule for rule in rules]
-        # for rule in valid_rules:
-        #     if not rule.check_valid(self):
-        #         valid_rules.remove(rule)
+        valid_rules = [rule for rule in rules]
+        for rule in valid_rules:
+            if not rule.check_valid(self):
+                valid_rules.remove(rule)
         valid_rules = rules
 
         if not self.should_branch(valid_rules):
             current_state = self
             valid_rules = self.combine_rules(valid_rules)
+            print(valid_rules)
             for rule in valid_rules:
                 current_state = rule.apply(current_state)
             branches.append(current_state)
@@ -237,24 +221,24 @@ class State:
         return branches
 
     def should_branch(self, rules):
-        quantity_table = []
-        for rule in rules:
-            quantity2 = rule.get_quantity(self, rule.entity_name2, rule.quantity_name2)
-            if quantity_table is None:
-                quantity_table.append(quantity)
-            else:
-                for quantity in quantity_table:
-                    if quantity2 == quantity:
-                        return True
-                    else:
-                        quantity_table.append(quantity)
+        # quantity_table = []
+        # for rule in rules:
+        #     quantity2 = rule.get_quantity(self, rule.entity_name2, rule.quantity_name2)
+        #     if quantity_table is None:
+        #         quantity_table.append(quantity)
+        #     else:
+        #         for quantity in quantity_table:
+        #             if quantity2 == quantity:
+        #                 return True
+        #             else:
+        #                 quantity_table.append(quantity)
 
         return False
 
 
 
     def combine_rules(self, rules):
-        return [rules]
+        return rules
 
     def __copy__(self):
         return State(**dict(zip(self.entity_names, [copy.copy(entity) for entity in self.entities])))
