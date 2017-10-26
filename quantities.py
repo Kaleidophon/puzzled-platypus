@@ -92,6 +92,7 @@ class Quantity:
     """
     magnitude = None
     derivative = None
+    init_phase = True
 
     def __init__(self, model, magnitude="0", derivative="0"):
         assert model in QUANTITY_SPACES.keys(), "Unknown model"
@@ -108,6 +109,7 @@ class Quantity:
         # Wrap magnitude and derivative in Quantifiables for neat addition / subtraction functionalities
         self.magnitude = Quantifiable(value=magnitude, quantity_space=self.quantity_space)
         self.derivative = Quantifiable(value=derivative, quantity_space=QUANTITY_SPACE_DERIVATIVE)
+        self.init_phase = False
 
     def __copy__(self):
         return Quantity(self.model, str(self.magnitude), str(self.derivative))
@@ -115,10 +117,16 @@ class Quantity:
     def __str__(self):
         return "{}, {}".format(self.magnitude, self.derivative)
 
+    def __setattr__(self, key, value):
+        if key == "magnitude" and not self.init_phase:
+            self.magnitude.value = value
+        elif key == "derivative" and not self.init_phase:
+            self.derivative.value = value
+        else:
+            super().__setattr__(key, value)
+
 
 if __name__ == "__main__":
-    quant = Quantifiable("0", quantity_space=GLOBAL_QUANTITY_SPACE)
-    print(quant)
-    quant.value = "max"
-    print(quant)
+    quant = Quantity(model="inflow")
+    quant.magnitude = "max"
 
