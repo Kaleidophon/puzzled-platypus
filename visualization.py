@@ -25,9 +25,29 @@ def _init_argparser():
 
 def visualize_state_graph(state_graph, graph_type):
     dot = Digraph(comment='State graph', format="png")
+    dot.attr(label="State Graph", fontsize="20")
 
     for node_uid, node in state_graph.nodes:
-        dot.node(node_uid, node.readable_id.replace(" | ", "\n"), shape="box")
+        entries = node.readable_id.split("|")
+        values = entries[0].split()
+        node_data = "I(M:" + values[0] + ", D:" + values[1] + ")\n"
+        entry = entries[1].split(";")
+        if graph_type == "minimal":
+            values = entry[0].split()
+            node_data += "V(M:" + values[0] + ", D:" + values[1] + ")\n"
+            values = entries[2].split()
+            node_data += "O(M:" + values[0] + ", D:" + values[1] + ")\n"
+        else:
+            values = entry[0].split()
+            node_data += "V(M:" + values[0] + ", D:" + values[1] + ")\n"
+            values = entry[1].split()
+            node_data += "H(M:" + values[0] + ", D:" + values[1] + ")\n"
+            values = entry[2].split()
+            node_data += "P(M:" + values[0] + ", D:" + values[1] + ")\n"
+            values = entries[2].split()
+            node_data += "O(M:" + values[0] + ", D:" + values[1] + ")\n"
+
+        dot.node(node_uid, node_data, shape="box", fontsize="10", style="filled", fillcolor="#DDDDDD")
 
     for start, target in state_graph.edges:
         dot.edge(start.uid, target.uid)
