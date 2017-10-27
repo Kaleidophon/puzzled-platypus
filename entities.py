@@ -27,7 +27,7 @@ class Entity:
                 (quantity.magnitude, quantity.derivative)
             }
 
-        return [el[0] for el in list(itertools.product(*list(branches.values())))]
+        return list(itertools.product(*list(branches.values())))
 
     @property
     def fancy_repr(self):

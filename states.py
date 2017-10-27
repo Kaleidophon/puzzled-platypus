@@ -16,14 +16,12 @@ class StateGraph:
     """
     Class to model a state graph, i.e. a graph with states as nodes and transitions between those same nodes as edges.
     """
-    states = None
-    transitions = None
-
     def __init__(self, initial_state, inter_state, intra_state):
         self.initial_state = initial_state
         self.entities = initial_state.entities
         self.inter_state = inter_state  # Inter-state relationships
         self.intra_state = intra_state  # Intra-state relationships
+        self.states, self.transitions = None, None
 
     def envision(self, verbosity=0):
         if not (self.states or self.transitions):  # Do some caching of results
@@ -80,7 +78,7 @@ class StateGraph:
         return states, transitions
 
     def _apply_consequences(self, state):
-        state = copy.copy(state)
+        #state = copy.copy(state)
 
         for consequence in self.consequences:
             applied_consequence = consequence.apply(state)
@@ -104,18 +102,31 @@ class StateGraph:
         _, transitions = self.envision()
         return [(start, label, end) for (start, label), end in transitions.items()]
 
-    @staticmethod
-    def construct_state_from_raw_quantities(state, raw_quantities):
+    def construct_state_from_raw_quantities(self, state, raw_quantities):
         new_state = copy.copy(state)
         raw_quantities = list(raw_quantities)
 
+        flattened_quantities = self.flatten_quantity_list(raw_quantities)
+
         for entity in new_state.entities:
             for quantity in entity.quantities:
-                raw_quantity = raw_quantities.pop(0)
+                raw_quantity = flattened_quantities.pop(0)
                 quantity.magnitude.replace(raw_quantity[0])
                 quantity.derivative.replace(raw_quantity[1])
 
         return new_state
+
+    def flatten_quantity_list(self, quantity_list):
+        el = quantity_list[0]
+        if type(el) == tuple and type(el[0]) == str:
+            return quantity_list
+
+        flatter_list = []
+        for element in quantity_list:
+            for ele in element:
+                flatter_list.append(ele)
+
+        return self.flatten_quantity_list(flatter_list)
 
     def _print_transition_table_header(self, verbosity):
         if verbosity > 1:

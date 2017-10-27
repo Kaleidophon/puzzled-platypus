@@ -43,8 +43,6 @@ class Quantifiable:
     """
     Class to model a magnitude or a derivative.
     """
-    aggregations = []
-
     def __init__(self, value, quantity_space, quant_type, strict=True):
         assert quant_type in ("magnitude", "derivative"), "Invalid type for quantifiable"
         self.init_stage = True  # Otherwise the assert-statement in __setattr__ will be triggered
@@ -56,6 +54,7 @@ class Quantifiable:
         self.quantity_space = quantity_space
         self.space_ceil = len(quantity_space) - 1
         self.value_index = quantity_space.index(value)
+        self.aggregations = []
 
     def is_max(self):
         return self.value_index == self.space_ceil
@@ -71,7 +70,7 @@ class Quantifiable:
     def update(self):
         branches = set()
 
-        if self.type == "derivative":
+        if self.type == "derivative" and len(self.aggregations) > 0:
             initial_effect, initial_value = self.aggregations[0]
             current_value = initial_value
 
@@ -98,12 +97,15 @@ class Quantifiable:
         return GLOBAL_QUANTITY_SPACE.index(self.value)
 
     def __add__(self, other):
+        # Just add a number
         if type(other) == int:
             assert other == 1, "You can only add one to a quantifiable."
 
             if self.value_index != self.space_ceil:
                 self.value_index += 1
                 self.value = self.quantity_space[self.value_index]
+
+        # Add a number and origin of effect (influence, proportionality)
         elif type(other) == tuple:
             effect, value = other
             assert value == 1, "You can only add one to a quantifiable."
@@ -117,12 +119,14 @@ class Quantifiable:
         return self.__add__(other)
 
     def __sub__(self, other):
+        # Just subtract a number
         if type(other) == int:
             assert other == 1, "You can only subtract one to a quantifiable."
             if self.value_index != 0:
                 self.value_index -= 1
                 self.value = self.quantity_space[self.value_index]
 
+        # Subtract a number and origin of effect (influence, proportionality)
         elif type(other) == tuple:
             effect, value = other
             assert value == 1, "You can only subtract one to a quantifiable."
@@ -160,13 +164,10 @@ class Quantity:
     """
     Class modeling a quantity of a inflow, outflow or volume.
     """
-    magnitude = None
-    derivative = None
-    init_phase = True
-
     def __init__(self, model, magnitude="0", derivative="0"):
         assert model in QUANTITY_SPACES.keys(), "Unknown model"
 
+        self.init_phase = True
         self.model = model
         self.quantity_space = QUANTITY_SPACES[model]
 
@@ -177,8 +178,12 @@ class Quantity:
 
     def init_quantifiables(self, magnitude, derivative):
         # Wrap magnitude and derivative in Quantifiables for neat addition / subtraction functionalities
-        self.magnitude = Quantifiable(value=magnitude, quantity_space=self.quantity_space, quant_type="magnitude")
-        self.derivative = Quantifiable(value=derivative, quantity_space=QUANTITY_SPACE_DERIVATIVE, quant_type="derivative")
+        self.magnitude = Quantifiable(
+            value=magnitude, quantity_space=self.quantity_space, quant_type="magnitude"
+        )
+        self.derivative = Quantifiable(
+            value=derivative, quantity_space=QUANTITY_SPACE_DERIVATIVE, quant_type="derivative"
+        )
         self.init_phase = False
 
     def update(self):

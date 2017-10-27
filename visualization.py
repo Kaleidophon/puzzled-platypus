@@ -64,6 +64,7 @@ def visualize_causal_model(state_graph, super_entity="Super"):
 
 if __name__ == "__main__":
     state_graph = init_minimum_viable_state_graph()
+    #state_graph = init_extra_points_state_graph()
     visualize_state_graph(state_graph)
     #visualize_causal_model(state_graph, super_entity="Tub")
 
