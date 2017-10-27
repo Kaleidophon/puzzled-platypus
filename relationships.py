@@ -96,16 +96,6 @@ class NegativeConsequence(Consequence):
         return state
 
 
-class InterStateRelationship(Relationship):
-    @abc.abstractmethod
-    def apply(self, state):
-        pass
-
-    def propagate_effect(self, state, effect):
-        quantity = self.target_quantity(state)
-        quantity.aggregate(self.name, effect)
-
-
 class PositiveInfluence(Relationship):
     def __init__(self, source, target):
         super().__init__(source, target, name="I+")
@@ -117,7 +107,7 @@ class PositiveInfluence(Relationship):
         if source_quantity.magnitude != "0" and \
                 (target_quantity.magnitude != "max" and target_quantity.derivative != "+"):
 
-            target_quantity.derivative += 1
+            target_quantity.derivative += (self.name, 1)
 
         return state
 
@@ -133,7 +123,7 @@ class NegativeInfluence(Relationship):
         if source_quantity.magnitude != "0" and \
                 (target_quantity.magnitude != "0" and target_quantity.derivative != "-"):
 
-            target_quantity.derivative -= 1
+            target_quantity.derivative -= (self.name, 1)
 
         return state
 
@@ -148,11 +138,11 @@ class PositiveProportion(Relationship):
 
         if source_quantity.derivative == "+" and \
                 (target_quantity.magnitude != "max" and target_quantity.derivative != "+"):
-            target_quantity.derivative += 1
+            target_quantity.derivative += (self.name, 1)
 
         elif source_quantity.derivative == "-" and \
                 (target_quantity.magnitude != "0" and target_quantity.derivative != "-"):
-            target_quantity.derivative -= 1
+            target_quantity.derivative -= (self.name, 1)
 
         return state
 

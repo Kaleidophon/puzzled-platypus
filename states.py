@@ -5,9 +5,10 @@ Module defining the state graph.
 
 # STD
 import copy
+import itertools
 
 # PROJECT
-from quantities import get_global_quantity_index
+from quantities import get_global_quantity_index, Quantifiable
 from relationships import Consequence
 
 
@@ -46,24 +47,26 @@ class StateGraph:
             # TODO: [DU 26.10.17]
 
             # Step 3: Aggregate incoming influences and proportionalities for every entity
-            # TODO: [DU 26.10.17]
+            implied_state.apply_rules(self.inter_state)
 
             # Step 4: Perform derivative calculus and update quantities
-            # TODO: [DU 26.10.17]
-
             # Step 5: Branch if necessary
+            raw_branches = implied_state.update()
+
             # TODO: [DU 26.10.17]
             # print("{:<27} --({})-->   {}".format(current_state.readable_id, "C?", implied_state.readable_id))
-            branches = []
+            branches = [self.construct_state_from_raw_quantities(current_state, branch) for branch in raw_branches]
+            branches_ = [state for state in branches if state.uid not in states]
 
             # Step 6: Apply value correspondences again if possible
             # TODO: [DU 26.10.17]
 
-            for rule, new_state in branches:
-                transitions[(implied_state.uid, rule)] = new_state.uid
+            for new_state in branches_:
+                rule = "R"
+                transitions[(current_state.uid, rule)] = new_state.uid
 
                 if verbosity > 1:
-                    print("{:<27} --({})-->   {}".format(implied_state.readable_id, rule, new_state.readable_id))
+                    print("{:<27} --({})-->   {}".format(current_state.readable_id, rule, new_state.readable_id))
 
                 if new_state.uid not in states:
                     states[new_state.uid] = new_state
@@ -77,6 +80,7 @@ class StateGraph:
         return states, transitions
 
     def _apply_consequences(self, state):
+        state = copy.copy(state)
 
         for consequence in self.consequences:
             applied_consequence = consequence.apply(state)
@@ -99,6 +103,19 @@ class StateGraph:
         self.envision()
         _, transitions = self.envision()
         return [(start, label, end) for (start, label), end in transitions.items()]
+
+    @staticmethod
+    def construct_state_from_raw_quantities(state, raw_quantities):
+        new_state = copy.copy(state)
+        raw_quantities = list(raw_quantities)
+
+        for entity in new_state.entities:
+            for quantity in entity.quantities:
+                raw_quantity = raw_quantities.pop(0)
+                quantity.magnitude.replace(raw_quantity[0])
+                quantity.derivative.replace(raw_quantity[1])
+
+        return new_state
 
     def _print_transition_table_header(self, verbosity):
         if verbosity > 1:
@@ -158,6 +175,14 @@ class State:
         self.entities = list(entities.values())
         vars(self).update(entities)
 
+    def update(self):
+        entity_branches = [entity.update() for entity in self.entities]
+
+        return list(itertools.product(*entity_branches))
+
+    def apply_rules(self, rules):
+        return [rule.apply(self) for rule in rules]
+
     def __repr__(self):
         return "<State: {}>".format(self.readable_id)
 
@@ -197,9 +222,6 @@ class State:
                 for entity in self.entities
             ]
         )
-
-    def apply_rules(self, rules):
-        return [rule.apply(self) for rule in rules]
 
     def __copy__(self):
         return State(**dict(zip(self.entity_names, [copy.copy(entity) for entity in self.entities])))

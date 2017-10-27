@@ -57,7 +57,6 @@ def visualize_causal_model(state_graph, super_entity="Super"):
         end = dependency.entity_name2 + "." + dependency.quantity_name2
         dot.edge(start, end, label=dependency.relation, len="1.5")
 
-
     # Visualize value correspondences
     # TODO [DU 24.10.17]
 
@@ -65,6 +64,6 @@ def visualize_causal_model(state_graph, super_entity="Super"):
 
 if __name__ == "__main__":
     state_graph = init_minimum_viable_state_graph()
-    #visualize_state_graph(state_graph)
-    visualize_causal_model(state_graph, super_entity="Tub")
+    visualize_state_graph(state_graph)
+    #visualize_causal_model(state_graph, super_entity="Tub")
 

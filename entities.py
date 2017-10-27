@@ -5,6 +5,7 @@ Module defining entities for the causal graph.
 
 # STD
 import copy
+import itertools
 
 
 class Entity:
@@ -17,16 +18,21 @@ class Entity:
         """
         Update quantities based on the aggregated effects.
         """
+        branches = {quantity: set() for quantity in self.quantities}
+
         for quantity in self.quantities:
-            quantity.update()
+            quantity_branches = quantity.update()
+
+            branches[quantity] = quantity_branches if len(quantity_branches) > 0 else {
+                (quantity.magnitude, quantity.derivative)
+            }
+
+        return [el[0] for el in list(itertools.product(*list(branches.values())))]
 
     @property
     def fancy_repr(self):
         return " | ".join(
-            [
-                "M: {}, d: {}".format(quantity.magnitude, quantity.derivative)
-                for quantity in self.quantities
-            ]
+            ["M: {}, d: {}".format(quantity.magnitude, quantity.derivative) for quantity in self.quantities]
         )
 
     def __copy__(self):
