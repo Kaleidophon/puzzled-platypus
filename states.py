@@ -11,9 +11,10 @@ import collections
 # PROJECT
 from quantities import get_global_quantity_index
 from relationships import Consequence, ValueCorrespondence
+from visualization import StateGraphPrintingMixin
 
 
-class StateGraph:
+class StateGraph(StateGraphPrintingMixin):
     """
     Class to model a state graph, i.e. a graph with states as nodes and transitions between those same nodes as edges.
     """
@@ -38,8 +39,16 @@ class StateGraph:
         while len(state_stack) != 0:
             current_state = state_stack.pop(0)
 
+            if verbosity > 2:
+                print(
+                    "Current state: [ {} ] | Stack size: {} | States so far: {} | Transitions so far: {}".format(
+                        current_state.readable_id, len(state_stack), len(states), len(transitions)
+                    )
+                )
+
             # Step 1: Apply consequences
             implied_state = self._apply_consequences(current_state)
+            if verbosity > 2: print("After consequences: [ {} ]".format(implied_state.readable_id))
 
             # Step 2: Aggregate incoming influences and proportionalities for every entity
             implied_state.apply_rules(self.inter_state)
@@ -47,17 +56,24 @@ class StateGraph:
             # Step 3: Perform derivative calculus and update quantities, branch if necessary
             raw_branches = implied_state.update()
             branches = [self.construct_state_from_raw_quantities(current_state, branch) for branch in raw_branches]
+            if verbosity > 2: print("Possible branches:\n\t{}".format(
+                "\n\t".join(["[ {} ]".format(branch.readable_id) for branch in branches]))
+            )
 
             for new_state in branches:
                 # Step 4: Apply value correspondences again if possible
                 try:
                     new_state = self._apply_vcs(new_state)
                 except AssertionError:
+                    if verbosity > 2:
+                        print("State {} discarded due to discontinues by value correspondences.".format(
+                            new_state.readable_id)
+                        )
                     continue  # Discontinuity
 
                 if current_state.uid != new_state.uid:
                     if verbosity > 1:
-                        print("New transition: {} ----> {}".format(
+                        print("New transition: [ {} ] ----> [ {} ]".format(
                             current_state.readable_id, new_state.readable_id)
                         )
                     transitions[current_state].append(new_state)
@@ -139,63 +155,6 @@ class StateGraph:
                 flatter_list.append(ele)
 
         return self.flatten_quantity_list(flatter_list)
-
-    def _print_transition_table(self, transitions):
-        # Not beautiful but still in the scope of this project
-        if len(self.initial_state.container.quantities) == 3:
-            print("\n{pad} Transitions found {pad}\n".format(pad="#" * 39))
-            print(
-                "\n{tspace}{tap:<4} | {cspace}{container:<16} | {drain} {relationship} {tap:>5}{tspace} | "
-                "{container:>16}{cspace} | {drain}".format(
-                    tap="tap", container="container", drain="drain", relationship=" "*12,
-                    tspace=" "*2, cspace=" "*8
-                )
-            )
-            print("{}+{}+{}{}{}+{}+{}".format("-"*7, "-"*26, "-"*7, " "*14, "-"*7, "-"*26, "-"*6))
-
-            for start in transitions:
-                for end in transitions[start]:
-                    print("{start} {pad}---->{pad} {end}".format(
-                        start=start.readable_id, end=end.readable_id, pad=" "*4
-                    ))
-
-        if len(self.initial_state.container.quantities) == 1:
-            print("\n{pad} Transitions found {pad}\n".format(pad="#" * 22))
-            print(
-                "\n{tspace}{tap:<4} | {cspace}{container} | {drain} {relationship} {tap:>7}{tspace} | "
-                "{container}{cspace} | {drain}".format(
-                    tap="tap", container="cont.", drain="drain", relationship=" "*12,
-                    tspace=" "*2, cspace=" "*1
-                )
-            )
-            print("{}+{}+{}{}{}+{}+{}".format("-" * 7, "-" * 8, "-" * 7, " " * 14, "-" * 9, "-" * 8, "-" * 6))
-
-            for start in transitions:
-                for end in transitions[start]:
-                    print("{start} {pad}---->{pad} {end}".format(
-                        start=start.readable_id, end=end.readable_id, pad=" "*5
-                    ))
-
-    def _print_state_table(self, states):
-        # Not beautiful but still in the scope of this project
-        if len(self.initial_state.container.quantities) == 3:
-            print("\n{pad} States found {pad}\n".format(pad="#"*14))
-            print("{tspace}{tap:<4} | {cspace}{container:<16} | {drain}".format(
-                    tap="tap", container="container", drain="drain", tspace=" "*2, cspace=" "*8
-                )
-            )
-            print("{}+{}+{}".format("-"*7, "-"*26, "-"*7))
-
-        if len(self.initial_state.container.quantities) == 1:
-            print("\n{pad} States found {pad}\n".format(pad="#" * 5))
-            print("{tspace}{tap:<4} | {cspace}{container} | {drain}".format(
-                tap="tap", container="cont.", drain="drain", tspace=" " * 2, cspace=" " * 1
-                )
-            )
-            print("{}+{}+{}".format("-" * 7, "-" * 8, "-" * 7))
-
-        for state in states.values():
-            print(state.readable_id)
 
 
 class State:

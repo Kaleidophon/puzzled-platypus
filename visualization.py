@@ -9,9 +9,6 @@ import argparse
 # EXT
 from graphviz import Digraph
 
-# PROJECT
-from graph import init_extra_points_state_graph, init_minimum_viable_state_graph
-
 
 def _init_argparser():
     argparser = argparse.ArgumentParser()
@@ -20,7 +17,7 @@ def _init_argparser():
         help="Type of state graph that is going to be displayed."
     )
     argparser.add_argument(
-        "--verbosity", "-v", choices=range(2), default=1,
+        "--verbosity", "-v", type=int, choices=range(4), default=1,
         help="Verbosity of state graph algorithm"
     )
     return argparser
@@ -79,7 +76,70 @@ def visualize_causal_model(state_graph, graph_type, super_entity="Super"):
 
     dot.render('img/{}_causal'.format(graph_type), view=True)
 
+
+class StateGraphPrintingMixin:
+    """
+    Mixin that provides functions to print the transition and state table of a state graph.
+    """
+    def _print_transition_table(self, transitions):
+        # Not beautiful but still in the scope of this project
+        if len(self.initial_state.container.quantities) == 3:
+            print("\n{pad} Transitions found {pad}\n".format(pad="#" * 39))
+            print(
+                "\n{tspace}{tap:<4} | {cspace}{container:<16} | {drain} {relationship} {tap:>5}{tspace} | "
+                "{container:>16}{cspace} | {drain}".format(
+                    tap="tap", container="container", drain="drain", relationship=" "*12,
+                    tspace=" "*2, cspace=" "*8
+                )
+            )
+            print("{}+{}+{}{}{}+{}+{}".format("-"*7, "-"*26, "-"*7, " "*14, "-"*7, "-"*26, "-"*6))
+
+            for start in transitions:
+                for end in transitions[start]:
+                    print("{start} {pad}---->{pad} {end}".format(
+                        start=start.readable_id, end=end.readable_id, pad=" "*4
+                    ))
+
+        if len(self.initial_state.container.quantities) == 1:
+            print("\n{pad} Transitions found {pad}\n".format(pad="#" * 22))
+            print(
+                "\n{tspace}{tap:<4} | {cspace}{container} | {drain} {relationship} {tap:>7}{tspace} | "
+                "{container}{cspace} | {drain}".format(
+                    tap="tap", container="cont.", drain="drain", relationship=" "*12,
+                    tspace=" "*2, cspace=" "*1
+                )
+            )
+            print("{}+{}+{}{}{}+{}+{}".format("-" * 7, "-" * 8, "-" * 7, " " * 14, "-" * 9, "-" * 8, "-" * 6))
+
+            for start in transitions:
+                for end in transitions[start]:
+                    print("{start} {pad}---->{pad} {end}".format(
+                        start=start.readable_id, end=end.readable_id, pad=" "*5
+                    ))
+
+    def _print_state_table(self, states):
+        # Not beautiful but still in the scope of this project
+        if len(self.initial_state.container.quantities) == 3:
+            print("\n{pad} States found {pad}\n".format(pad="#"*14))
+            print("{tspace}{tap:<4} | {cspace}{container:<16} | {drain}".format(
+                    tap="tap", container="container", drain="drain", tspace=" "*2, cspace=" "*8
+                )
+            )
+            print("{}+{}+{}".format("-"*7, "-"*26, "-"*7))
+
+        if len(self.initial_state.container.quantities) == 1:
+            print("\n{pad} States found {pad}\n".format(pad="#" * 5))
+            print("{tspace}{tap:<4} | {cspace}{container} | {drain}".format(
+                tap="tap", container="cont.", drain="drain", tspace=" " * 2, cspace=" " * 1
+                )
+            )
+            print("{}+{}+{}".format("-" * 7, "-" * 8, "-" * 7))
+
+        for state in states.values():
+            print(state.readable_id)
+
 if __name__ == "__main__":
+    from graph import init_extra_points_state_graph, init_minimum_viable_state_graph
     argparser = _init_argparser()
     args = argparser.parse_args()
     print(args, "\n")
