@@ -69,9 +69,9 @@ class Quantifiable:
         self.init_stage = False
 
     def update(self):
-        # TODO: [Do derivative calculus here]
+        branches = set()
+
         if self.type == "derivative":
-            branches = set()
             initial_effect, initial_value = self.aggregations[0]
             current_value = initial_value
 
@@ -89,7 +89,9 @@ class Quantifiable:
                     current_value = new_value
 
             self.value = current_value
-            return branches
+
+        self.aggregations = []  # Reset aggregations
+        return branches
 
     @property
     def global_value_index(self):

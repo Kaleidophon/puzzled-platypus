@@ -17,8 +17,6 @@ QUANTITY_RELATIONSHIPS = {
     "VC_0",
     "C+",       # A positive derivative will increment the magnitude of the same quantity
     "C-",       # A negative derivative will decrement the magnitude of the same quantity
-    "A+",       # Open tap
-    "A-"        # Close tap
 }
 
 
@@ -75,9 +73,6 @@ class PositiveConsequence(Consequence):
         if quantity.derivative == "+" and not quantity.magnitude.is_max():
             quantity.magnitude += 1
 
-            if quantity.magnitude == "max":
-                quantity.derivative -= 1
-
         return state
 
 
@@ -90,8 +85,6 @@ class NegativeConsequence(Consequence):
 
         if quantity.derivative == "-" and not quantity.magnitude.is_min():
             quantity.magnitude -= 1
-            if quantity.magnitude == "0":
-                quantity.derivative += 1
 
         return state
 
