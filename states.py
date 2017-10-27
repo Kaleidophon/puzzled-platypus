@@ -10,7 +10,7 @@ import collections
 
 # PROJECT
 from quantities import get_global_quantity_index
-from relationships import Consequence, ValueCorrespondence
+from relationships import Consequence, ValueCorrespondence, NegativeInfluence, PositiveInfluence, PositiveProportion
 
 
 class StateGraph:
@@ -40,14 +40,12 @@ class StateGraph:
             current_state = state_stack.pop(0)
             print(current_state.readable_id)
 
-            # Step 1: Apply consequences
             implied_state = self._apply_consequences(current_state)
+            implied_state = self._apply_relationships(implied_state, self.influences)
 
-            # Step 2: Apply value correspondences if possible
-            implied_state = self._apply_vcs(implied_state)
-
-            # Step 3: Aggregate incoming influences and proportionalities for every entity
-            implied_state.apply_rules(self.inter_state)
+            if implied_state.uid != current_state.uid:
+                implied_state = self._apply_relationships(implied_state, self.proportionalities)
+                implied_state = self._apply_vcs(implied_state)
 
             # Step 4: Perform derivative calculus and update quantities
             # Step 5: Branch if necessary
@@ -57,7 +55,6 @@ class StateGraph:
 
             for new_state in branches:
                 # Step 6: Apply value correspondences again if possible
-                new_state = self._apply_vcs(new_state)
 
                 if current_state.uid != new_state.uid:
                     transitions[current_state.uid].append(new_state.uid)
@@ -93,6 +90,15 @@ class StateGraph:
 
         return state
 
+    @staticmethod
+    def _apply_relationships(state, relationships):
+        state = copy.copy(state)
+
+        for relationship in relationships:
+            state = relationship.apply(state)
+
+        return state
+
     @property
     def consequences(self):
         return [relationship for relationship in self.intra_state if isinstance(relationship, Consequence)]
@@ -100,6 +106,18 @@ class StateGraph:
     @property
     def value_correspondences(self):
         return [relationship for relationship in self.intra_state if isinstance(relationship, ValueCorrespondence)]
+
+    @property
+    def proportionalities(self):
+        return [relationship for relationship in self.inter_state if isinstance(relationship, PositiveProportion)]
+
+    @property
+    def influences(self):
+        return [
+            relationship for relationship in self.inter_state
+            if isinstance(relationship, PositiveInfluence) or isinstance(relationship, NegativeInfluence)
+        ]
+
 
     @property
     def nodes(self):

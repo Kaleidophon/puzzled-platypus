@@ -43,13 +43,13 @@ class Quantifiable:
     """
     Class to model a magnitude or a derivative.
     """
-    def __init__(self, value, quantity_space, quant_type, strict=True):
+    def __init__(self, value, quantity_space, quant_type, strict=True, delta=0):
         assert quant_type in ("magnitude", "derivative"), "Invalid type for quantifiable"
         self.init_stage = True  # Otherwise the assert-statement in __setattr__ will be triggered
         self.value = value
         self.init_stage = False
         self.type = quant_type
-        self.delta = 0  # Rate of change since last update
+        self.delta = delta  # Rate of change since last update
 
         self.strict = strict
         self.quantity_space = quantity_space
@@ -155,8 +155,8 @@ class Quantifiable:
 
     def __setattr__(self, key, value):
         if key == "value" and not self.init_stage and self.strict:
-            assert value == "?" or abs(self.global_value_index - GLOBAL_QUANTITY_SPACE.index(value)) < 2, \
-                "Value assignment to Quantifiable would create a discontinuity"
+            #assert value == "?" or abs(self.global_value_index - GLOBAL_QUANTITY_SPACE.index(value)) < 2, \
+            #    "Value assignment to Quantifiable would create a discontinuity"
 
             if type(value) == tuple:
                 value_, effect = value
@@ -172,7 +172,7 @@ class Quantity:
     """
     Class modeling a quantity of a inflow, outflow or volume.
     """
-    def __init__(self, model, magnitude="0", derivative="0"):
+    def __init__(self, model, magnitude="0", derivative="0", delta_magnitude=0, delta_derivative=0):
         assert model in QUANTITY_SPACES.keys(), "Unknown model"
 
         self.init_phase = True
@@ -182,15 +182,15 @@ class Quantity:
         assert magnitude in self.quantity_space, "Invalid value for magnitude: {}".format(magnitude)
         assert derivative in QUANTITY_SPACE_DERIVATIVE, "Invalid value for derivative: {}".format(derivative)
 
-        self.init_quantifiables(magnitude, derivative)
+        self.init_quantifiables(magnitude, derivative, delta_magnitude, delta_derivative)
 
-    def init_quantifiables(self, magnitude, derivative):
+    def init_quantifiables(self, magnitude, derivative, delta_magnitude, delta_derivative):
         # Wrap magnitude and derivative in Quantifiables for neat addition / subtraction functionalities
         self.magnitude = Quantifiable(
-            value=magnitude, quantity_space=self.quantity_space, quant_type="magnitude"
+            value=magnitude, quantity_space=self.quantity_space, quant_type="magnitude", delta=delta_magnitude
         )
         self.derivative = Quantifiable(
-            value=derivative, quantity_space=QUANTITY_SPACE_DERIVATIVE, quant_type="derivative"
+            value=derivative, quantity_space=QUANTITY_SPACE_DERIVATIVE, quant_type="derivative", delta=delta_derivative
         )
         self.init_phase = False
 
@@ -207,7 +207,9 @@ class Quantity:
         return branches
 
     def __copy__(self):
-        return Quantity(self.model, str(self.magnitude), str(self.derivative))
+        return Quantity(
+            self.model, str(self.magnitude), str(self.derivative), self.magnitude.delta, self.derivative.delta
+        )
 
     def __str__(self):
         return "{}, {}".format(self.magnitude, self.derivative)

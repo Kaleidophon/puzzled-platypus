@@ -100,7 +100,7 @@ class PositiveInfluence(Relationship):
         if (source_quantity.magnitude == "+" or source_quantity.magnitude == "max") and \
                 not target_quantity.derivative.is_max():
 
-            target_quantity.derivative += (self.name, 1)
+            target_quantity.derivative += 1
 
         return state
 
@@ -115,8 +115,7 @@ class NegativeInfluence(Relationship):
 
         if (source_quantity.magnitude == "+" or source_quantity.magnitude == "max") and \
                 not target_quantity.derivative.is_min():
-            target_quantity.derivative -= (self.name, 1)
-
+            target_quantity.derivative -= 1
         return state
 
 
@@ -129,10 +128,10 @@ class PositiveProportion(Relationship):
         target_quantity = self.target_quantity(state)
 
         if source_quantity.derivative.delta > 0 and not target_quantity.derivative.is_max():
-            target_quantity.derivative += (self.name, 1)
+            target_quantity.derivative += 1
 
         elif source_quantity.derivative.delta < 0 and not target_quantity.derivative.is_min():
-            target_quantity.derivative -= (self.name, 1)
+            target_quantity.derivative -= 1
 
         return state
 
