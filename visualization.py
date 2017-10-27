@@ -16,8 +16,8 @@ def visualize_state_graph(state_graph):
     for node_uid, node in state_graph.nodes:
         dot.node(node_uid, node.readable_id.replace(" | ", "\n"), shape="box")
 
-    for start, label, target in state_graph.edges:
-        dot.edge(start, target, label=label)
+    for start, target in state_graph.edges:
+        dot.edge(start, target)
 
     dot.render('test-output/state_graph.png', view=True)
 

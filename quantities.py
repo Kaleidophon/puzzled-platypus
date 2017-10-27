@@ -49,6 +49,7 @@ class Quantifiable:
         self.value = value
         self.init_stage = False
         self.type = quant_type
+        self.delta = 0  # Rate of change since last update
 
         self.strict = strict
         self.quantity_space = quantity_space
@@ -75,7 +76,7 @@ class Quantifiable:
             current_value = initial_value
 
             if len(self.aggregations) != 1:
-                for effect, value in self.aggregations:
+                for effect, value in self.aggregations[1:]:
                     new_value = ADDITION_TABLE[(current_value, value)]
 
                     if new_value == "?":
@@ -90,6 +91,7 @@ class Quantifiable:
             self.value = current_value
 
         self.aggregations = []  # Reset aggregations
+        self.delta = 0  # Reset change since last update
         return branches
 
     @property
@@ -104,6 +106,7 @@ class Quantifiable:
             if self.value_index != self.space_ceil:
                 self.value_index += 1
                 self.value = self.quantity_space[self.value_index]
+                self.delta += 1
 
         # Add a number and origin of effect (influence, proportionality)
         elif type(other) == tuple:
@@ -111,6 +114,7 @@ class Quantifiable:
             assert value == 1, "You can only add one to a quantifiable."
 
             if self.value_index != self.space_ceil:
+                self.delta += 1
                 self.aggregations.append((effect, self.quantity_space[self.value_index + 1]))
 
         return self
@@ -125,6 +129,7 @@ class Quantifiable:
             if self.value_index != 0:
                 self.value_index -= 1
                 self.value = self.quantity_space[self.value_index]
+                self.delta -= 1
 
         # Subtract a number and origin of effect (influence, proportionality)
         elif type(other) == tuple:
@@ -132,6 +137,7 @@ class Quantifiable:
             assert value == 1, "You can only subtract one to a quantifiable."
 
             if self.value_index != 0:
+                self.delta -= 1
                 self.aggregations.append((effect, self.quantity_space[self.value_index - 1]))
 
         return self
@@ -156,6 +162,8 @@ class Quantifiable:
                 value_, effect = value
                 self.aggregations.append((effect, value_))
                 return
+            elif type(value) == int:
+                self.delta += GLOBAL_QUANTITY_SPACE.index(value) - self.global_value_index
 
         super().__setattr__(key, value)
 

@@ -50,8 +50,8 @@ def init_minimum_viable_state_graph():
         NegativeConsequence(target="container.volume"),
         PositiveConsequence(target="drain.outflow"),
         NegativeConsequence(target="drain.outflow"),
-        #VCmax(source="container.volume", target="drain.outflow"),
-        #VCzero(source="container.volume", target="drain.outflow")
+        VCmax(source="container.volume", target="drain.outflow"),
+        VCzero(source="container.volume", target="drain.outflow")
     ]
 
     # Create initial state

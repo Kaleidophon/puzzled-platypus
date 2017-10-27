@@ -6,10 +6,11 @@ Module defining the state graph.
 # STD
 import copy
 import itertools
+import collections
 
 # PROJECT
-from quantities import get_global_quantity_index, Quantifiable
-from relationships import Consequence
+from quantities import get_global_quantity_index
+from relationships import Consequence, ValueCorrespondence
 
 
 class StateGraph:
@@ -30,19 +31,20 @@ class StateGraph:
 
     def _envision(self, verbosity=0):
         states = {self.initial_state.uid: self.initial_state}
-        transitions = {}
+        transitions = collections.defaultdict(list)
         state_stack = [self.initial_state]
 
         self._print_transition_table_header(verbosity)
 
         while len(state_stack) != 0:
             current_state = state_stack.pop(0)
+            print(current_state.readable_id)
 
             # Step 1: Apply consequences
             implied_state = self._apply_consequences(current_state)
 
             # Step 2: Apply value correspondences if possible
-            # TODO: [DU 26.10.17]
+            implied_state = self._apply_consequences(implied_state)
 
             # Step 3: Aggregate incoming influences and proportionalities for every entity
             implied_state.apply_rules(self.inter_state)
@@ -50,25 +52,20 @@ class StateGraph:
             # Step 4: Perform derivative calculus and update quantities
             # Step 5: Branch if necessary
             raw_branches = implied_state.update()
-
-            # TODO: [DU 26.10.17]
             # print("{:<27} --({})-->   {}".format(current_state.readable_id, "C?", implied_state.readable_id))
             branches = [self.construct_state_from_raw_quantities(current_state, branch) for branch in raw_branches]
-            branches_ = [state for state in branches if state.uid not in states]
+            new_branches = [state for state in branches if state.uid not in states]
 
-            # Step 6: Apply value correspondences again if possible
-            # TODO: [DU 26.10.17]
-
-            for new_state in branches_:
-                rule = "R"
-                transitions[(current_state.uid, rule)] = new_state.uid
+            for new_state in new_branches:
+                # Step 6: Apply value correspondences again if possible
+                new_state = self._apply_consequences(new_state)
+                transitions[current_state.uid].append(new_state.uid)
+                states[new_state.uid] = new_state
+                state_stack.append(new_state)
 
                 if verbosity > 1:
                     print("{:<27} --({})-->   {}".format(current_state.readable_id, rule, new_state.readable_id))
 
-                if new_state.uid not in states:
-                    states[new_state.uid] = new_state
-                    state_stack.append(new_state)
         self._print_state_table_header(verbosity, states)
 
         if verbosity > 0:
@@ -78,18 +75,29 @@ class StateGraph:
         return states, transitions
 
     def _apply_consequences(self, state):
-        #state = copy.copy(state)
+        state = copy.copy(state)
 
         for consequence in self.consequences:
-            applied_consequence = consequence.apply(state)
-            if applied_consequence is not None:
-                state = applied_consequence
+            state = consequence.apply(state)
 
         return state
+
+    def _apply_vcs(self, state):
+        state = copy.copy(state)
+
+        for value_correspondence in self.value_correspondences:
+            state = value_correspondence.apply(state)
+
+        return state
+
 
     @property
     def consequences(self):
         return [relationship for relationship in self.intra_state if isinstance(relationship, Consequence)]
+
+    @property
+    def value_correspondences(self):
+        return [relationship for relationship in self.intra_state if isinstance(relationship, ValueCorrespondence)]
 
     @property
     def nodes(self):
@@ -100,7 +108,11 @@ class StateGraph:
     def edges(self):
         self.envision()
         _, transitions = self.envision()
-        return [(start, label, end) for (start, label), end in transitions.items()]
+
+        for start in transitions:
+            ends = transitions[start]
+            for end in ends:
+                yield (start, end)
 
     def construct_state_from_raw_quantities(self, state, raw_quantities):
         new_state = copy.copy(state)
@@ -178,9 +190,6 @@ class State:
     """
     Class to model a state in the state graph.
     """
-    discontinuity_counter = 0
-    constraint_counter = 0
-
     def __init__(self, **entities):
         self.entity_names = entities.keys()
         self.entities = list(entities.values())

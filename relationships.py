@@ -97,8 +97,8 @@ class PositiveInfluence(Relationship):
         source_quantity = self.source_quantity(state)
         target_quantity = self.target_quantity(state)
 
-        if source_quantity.magnitude != "0" and \
-                (target_quantity.magnitude != "max" and target_quantity.derivative != "+"):
+        if (source_quantity.magnitude == "+" or source_quantity.magnitude == "max") and \
+                not target_quantity.derivative.is_max():
 
             target_quantity.derivative += (self.name, 1)
 
@@ -113,9 +113,8 @@ class NegativeInfluence(Relationship):
         source_quantity = self.source_quantity(state)
         target_quantity = self.target_quantity(state)
 
-        if source_quantity.magnitude != "0" and \
-                (target_quantity.magnitude != "0" and target_quantity.derivative != "-"):
-
+        if (source_quantity.magnitude == "+" or source_quantity.magnitude == "max") and \
+                not target_quantity.derivative.is_min():
             target_quantity.derivative -= (self.name, 1)
 
         return state
@@ -129,12 +128,10 @@ class PositiveProportion(Relationship):
         source_quantity = self.source_quantity(state)
         target_quantity = self.target_quantity(state)
 
-        if source_quantity.derivative == "+" and \
-                (target_quantity.magnitude != "max" and target_quantity.derivative != "+"):
+        if source_quantity.derivative.delta > 0 and not target_quantity.derivative.is_max():
             target_quantity.derivative += (self.name, 1)
 
-        elif source_quantity.derivative == "-" and \
-                (target_quantity.magnitude != "0" and target_quantity.derivative != "-"):
+        elif source_quantity.derivative.delta < 0 and not target_quantity.derivative.is_min():
             target_quantity.derivative -= (self.name, 1)
 
         return state
@@ -159,11 +156,10 @@ class VCmax(ValueCorrespondence):
         source_quantity = self.source_quantity(state)
         target_quantity = self.target_quantity(state)
 
-        # TODO: Rewrite this to correspond to new logic [DU 26.10.17]
-        if source_quantity.magnitude != "max" and \
-                (target_quantity.magnitude == "max" and target_quantity.derivative == "+"):
-            return False
-        return True
+        if source_quantity.magnitude.is_max() and not target_quantity.magnitude.is_max():
+            target_quantity.magnitude = "max"
+
+        return state
 
 
 class VCzero(ValueCorrespondence):
@@ -174,8 +170,7 @@ class VCzero(ValueCorrespondence):
         source_quantity = self.source_quantity(state)
         target_quantity = self.target_quantity(state)
 
-        # TODO: Rewrite this to correspond to new logic [DU 26.10.17]
-        if source_quantity.magnitude != "0" and \
-                (target_quantity.magnitude == "0" and target_quantity.derivative == "-"):
-            return False
-        return True
+        if source_quantity.magnitude.is_min() and not source_quantity.magnitude.is_min():
+            target_quantity.magnitude = "0"
+
+        return state
