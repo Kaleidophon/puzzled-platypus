@@ -170,7 +170,7 @@ class VCzero(ValueCorrespondence):
         source_quantity = self.source_quantity(state)
         target_quantity = self.target_quantity(state)
 
-        if source_quantity.magnitude.is_min() and not source_quantity.magnitude.is_min():
+        if source_quantity.magnitude.is_min() and not target_quantity.magnitude.is_min():
             target_quantity.magnitude = "0"
 
         return state

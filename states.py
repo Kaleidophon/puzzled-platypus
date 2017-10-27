@@ -90,7 +90,6 @@ class StateGraph:
 
         return state
 
-
     @property
     def consequences(self):
         return [relationship for relationship in self.intra_state if isinstance(relationship, Consequence)]
