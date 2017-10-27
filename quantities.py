@@ -69,6 +69,10 @@ class Quantifiable:
         self.init_stage = False
 
     def update(self):
+        """
+        Do the derivative calculus: In case different influences / proportionalities make the expected value of a
+        derivative ambiguous, branch out.
+        """
         branches = set()
 
         if self.type == "derivative" and len(self.aggregations) > 0:
@@ -77,7 +81,7 @@ class Quantifiable:
 
             if len(self.aggregations) != 1:
                 for effect, value in self.aggregations[1:]:
-                    new_value = ADDITION_TABLE[(current_value, value)]
+                    new_value = ADDITION_TABLE[(current_value, value)]  # Look up result
 
                     if new_value == "?":
                         branches.add(self.value)
@@ -213,6 +217,7 @@ class Quantity:
         return "{}, {}".format(self.magnitude, self.derivative)
 
     def __setattr__(self, key, value):
+        # Sorry, pretty hacky
         if key == "magnitude" and not self.init_phase:
             self.init_phase = True
             if type(value) == Quantifiable:
@@ -230,10 +235,3 @@ class Quantity:
             self.init_phase = False
         else:
             super().__setattr__(key, value)
-
-if __name__ == "__main__":
-    quant = Quantity("inflow")
-    print(quant)
-    quant.derivative -= ("I+", 1)
-    quant.derivative += ("I-", 1)
-    print(quant.update())

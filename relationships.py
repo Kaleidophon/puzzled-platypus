@@ -5,16 +5,15 @@ Module defining different kinds of relationships.
 
 # STD
 import abc
-import copy
 
 # CONST
 QUANTITY_RELATIONSHIPS = {
-    "I+",
-    "I-",
-    "P+",
-    "P-",
-    "VC_max",
-    "VC_0",
+    "I+",       # Positive influence
+    "I-",       # Negative influence
+    "P+",       # Positive Proportionality
+    "P-",       # Negative Proportionality
+    "VC_max",   # Value Correspondence w/ maximum value
+    "VC_0",     # Value Correspondence w/ zero
     "C+",       # A positive derivative will increment the magnitude of the same quantity
     "C-",       # A negative derivative will decrement the magnitude of the same quantity
 }
@@ -138,11 +137,10 @@ class PositiveProportion(Relationship):
 
 
 class ValueCorrespondence(Relationship):
-    def __init__(self, source, target, source_magnitude, target_magnitude, name, bidirectional=False):
+    def __init__(self, source, target, source_magnitude, target_magnitude, name):
         super().__init__(source, target, name)
         self.source_magnitude = source_magnitude
         self.target_magnitude = target_magnitude
-        self.bidirectional = bidirectional
 
     @abc.abstractmethod
     def apply(self, state):
@@ -150,10 +148,8 @@ class ValueCorrespondence(Relationship):
 
 
 class VCmax(ValueCorrespondence):
-    def __init__(self, source, target, bidirectional=False):
-        super().__init__(
-            source, target, source_magnitude="max", target_magnitude="max", name="VC_max", bidirectional=bidirectional
-        )
+    def __init__(self, source, target):
+        super().__init__(source, target, source_magnitude="max", target_magnitude="max", name="VC_max")
 
     def apply(self, state):
         source_quantity = self.source_quantity(state)
@@ -161,18 +157,13 @@ class VCmax(ValueCorrespondence):
 
         if source_quantity.magnitude == self.source_magnitude and target_quantity.magnitude != self.target_magnitude:
             target_quantity.magnitude = "max"
-        elif self.bidirectional and target_quantity == self.target_magnitude and \
-                        source_quantity.magnitude != self.source_magnitude:
-            source_quantity.magnitude = "max"
 
         return state
 
 
 class VCzero(ValueCorrespondence):
-    def __init__(self, source, target, bidirectional=False):
-        super().__init__(
-            source, target, source_magnitude="0", target_magnitude="0", name="VC_0", bidirectional=bidirectional
-        )
+    def __init__(self, source, target):
+        super().__init__(source, target, source_magnitude="0", target_magnitude="0", name="VC_0")
 
     def apply(self, state):
         source_quantity = self.source_quantity(state)
@@ -180,7 +171,5 @@ class VCzero(ValueCorrespondence):
 
         if source_quantity.magnitude == self.source_magnitude and target_quantity.magnitude != self.target_magnitude:
             target_quantity.magnitude = "0"
-        elif self.bidirectional and target_quantity == self.target_magnitude and source_quantity.magnitude != self.source_magnitude:
-            source_quantity.magnitude = "0"
 
         return state

@@ -33,14 +33,15 @@ def visualize_state_graph(state_graph, graph_type):
         dot.node(node_uid, node.readable_id.replace(" | ", "\n"), shape="box")
 
     for start, target in state_graph.edges:
-        dot.edge(start, target)
+        dot.edge(start.uid, target.uid)
 
     dot.render('img/{}_states'.format(graph_type), view=True)
 
 
 def visualize_causal_model(state_graph, graph_type, super_entity="Super"):
-    dot = Digraph(comment='Causal model', format="png", graph_attr={"layout": "neato", "nodesep": "0.5", "ranksep": "0.5"})
-
+    dot = Digraph(
+        comment='Causal model', format="png", graph_attr={"layout": "neato", "nodesep": "0.5", "ranksep": "0.5"}
+    )
     entities = state_graph.entities
 
     # Visualize entities
