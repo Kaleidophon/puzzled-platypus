@@ -138,10 +138,11 @@ class PositiveProportion(Relationship):
 
 
 class ValueCorrespondence(Relationship):
-    def __init__(self, source, target, source_magnitude, target_magnitude, name):
+    def __init__(self, source, target, source_magnitude, target_magnitude, name, bidirectional=False):
         super().__init__(source, target, name)
         self.source_magnitude = source_magnitude
         self.target_magnitude = target_magnitude
+        self.bidirectional = bidirectional
 
     @abc.abstractmethod
     def apply(self, state):
@@ -149,28 +150,37 @@ class ValueCorrespondence(Relationship):
 
 
 class VCmax(ValueCorrespondence):
-    def __init__(self, source, target):
-        super().__init__(source, target, source_magnitude="max", target_magnitude="max", name="VC_max")
+    def __init__(self, source, target, bidirectional=False):
+        super().__init__(
+            source, target, source_magnitude="max", target_magnitude="max", name="VC_max", bidirectional=bidirectional
+        )
 
     def apply(self, state):
         source_quantity = self.source_quantity(state)
         target_quantity = self.target_quantity(state)
 
-        if source_quantity.magnitude.is_max() and not target_quantity.magnitude.is_max():
+        if source_quantity.magnitude == self.source_magnitude and target_quantity.magnitude != self.target_magnitude:
             target_quantity.magnitude = "max"
+        elif self.bidirectional and target_quantity == self.target_magnitude and \
+                        source_quantity.magnitude != self.source_magnitude:
+            source_quantity.magnitude = "max"
 
         return state
 
 
 class VCzero(ValueCorrespondence):
-    def __init__(self, source, target):
-        super().__init__(source, target, source_magnitude="0", target_magnitude="0", name="VC_0")
+    def __init__(self, source, target, bidirectional=False):
+        super().__init__(
+            source, target, source_magnitude="0", target_magnitude="0", name="VC_0", bidirectional=bidirectional
+        )
 
     def apply(self, state):
         source_quantity = self.source_quantity(state)
         target_quantity = self.target_quantity(state)
 
-        if source_quantity.magnitude.is_min() and not target_quantity.magnitude.is_min():
+        if source_quantity.magnitude == self.source_magnitude and target_quantity.magnitude != self.target_magnitude:
             target_quantity.magnitude = "0"
+        elif self.bidirectional and target_quantity == self.target_magnitude and source_quantity.magnitude != self.source_magnitude:
+            source_quantity.magnitude = "0"
 
         return state

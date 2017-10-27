@@ -18,13 +18,7 @@ from relationships import (
 )
 
 
-def main():
-    state_graph = init_minimum_viable_state_graph()
-    #state_graph = init_extra_points_state_graph()
-    state_graph.envision(verbosity=2)
-
-
-def init_minimum_viable_state_graph():
+def init_minimum_viable_state_graph(verbosity=0):
     # Construct tap
     inflow = Quantity("inflow", derivative="+")
     tap = Tap(inflow=inflow)
@@ -58,11 +52,13 @@ def init_minimum_viable_state_graph():
     init_state = State(tap=tap, container=container, drain=drain)
 
     # Create state graph
-    state_graph = StateGraph(initial_state=init_state, inter_state=inter_state, intra_state=intra_state)
+    state_graph = StateGraph(
+        initial_state=init_state, inter_state=inter_state, intra_state=intra_state, verbosity=verbosity
+    )
     return state_graph
 
 
-def init_extra_points_state_graph():
+def init_extra_points_state_graph(verbosity=0):
     # Construct tap
     inflow = Quantity("inflow", derivative="+")
     tap = Tap(inflow=inflow)
@@ -96,10 +92,10 @@ def init_extra_points_state_graph():
         NegativeConsequence(target="container.pressure"),
         PositiveConsequence(target="drain.outflow"),
         NegativeConsequence(target="drain.outflow"),
-        VCmax(source="container.height", target="container.pressure"),
-        VCzero(source="container.height", target="container.pressure"),
         VCmax(source="container.volume", target="container.height"),
         VCzero(source="container.volume", target="container.height"),
+        VCmax(source="container.height", target="container.pressure"),
+        VCzero(source="container.height", target="container.pressure"),
         VCmax(source="container.pressure", target="drain.outflow"),
         VCzero(source="container.pressure", target="drain.outflow")
     ]
@@ -108,8 +104,7 @@ def init_extra_points_state_graph():
     init_state = State(tap=tap, container=container, drain=drain)
 
     # Create state graph
-    state_graph = StateGraph(initial_state=init_state, inter_state=inter_state, intra_state=intra_state)
+    state_graph = StateGraph(
+        initial_state=init_state, inter_state=inter_state, intra_state=intra_state, verbosity=verbosity
+    )
     return state_graph
-
-if __name__ == "__main__":
-    main()

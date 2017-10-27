@@ -17,16 +17,17 @@ class StateGraph:
     """
     Class to model a state graph, i.e. a graph with states as nodes and transitions between those same nodes as edges.
     """
-    def __init__(self, initial_state, inter_state, intra_state):
+    def __init__(self, initial_state, inter_state, intra_state, verbosity=0):
         self.initial_state = initial_state
         self.entities = initial_state.entities
         self.inter_state = inter_state  # Inter-state relationships
         self.intra_state = intra_state  # Intra-state relationships
         self.states, self.transitions = None, None
+        self.verbosity = verbosity
 
-    def envision(self, verbosity=0):
+    def envision(self):
         if not (self.states or self.transitions):  # Do some caching of results
-            self.states, self.transitions = self._envision(verbosity=verbosity)
+            self.states, self.transitions = self._envision(verbosity=self.verbosity)
         return self.states, self.transitions
 
     def _envision(self, verbosity=0):
@@ -44,7 +45,10 @@ class StateGraph:
             implied_state = self._apply_consequences(current_state)
 
             # Step 2: Apply value correspondences if possible
-            implied_state = self._apply_vcs(implied_state)
+            #try:
+            #    implied_state = self._apply_vcs(implied_state)
+            #except AssertionError:
+            #    pass  # Discontinuity
 
             # Step 3: Aggregate incoming influences and proportionalities for every entity
             implied_state.apply_rules(self.inter_state)
@@ -57,7 +61,11 @@ class StateGraph:
 
             for new_state in branches:
                 # Step 6: Apply value correspondences again if possible
-                new_state = self._apply_vcs(new_state)
+
+                try:
+                    new_state = self._apply_vcs(new_state)
+                except AssertionError:
+                    continue  # Discontinuity
 
                 if current_state.uid != new_state.uid:
                     transitions[current_state.uid].append(new_state.uid)
