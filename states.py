@@ -44,7 +44,7 @@ class StateGraph:
             implied_state = self._apply_consequences(current_state)
 
             # Step 2: Apply value correspondences if possible
-            implied_state = self._apply_consequences(implied_state)
+            implied_state = self._apply_vcs(implied_state)
 
             # Step 3: Aggregate incoming influences and proportionalities for every entity
             implied_state.apply_rules(self.inter_state)
@@ -58,7 +58,7 @@ class StateGraph:
 
             for new_state in new_branches:
                 # Step 6: Apply value correspondences again if possible
-                new_state = self._apply_consequences(new_state)
+                new_state = self._apply_vcs(new_state)
                 transitions[current_state.uid].append(new_state.uid)
                 states[new_state.uid] = new_state
                 state_stack.append(new_state)
