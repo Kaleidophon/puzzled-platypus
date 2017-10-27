@@ -54,17 +54,20 @@ class StateGraph:
             raw_branches = implied_state.update()
             # print("{:<27} --({})-->   {}".format(current_state.readable_id, "C?", implied_state.readable_id))
             branches = [self.construct_state_from_raw_quantities(current_state, branch) for branch in raw_branches]
-            new_branches = [state for state in branches if state.uid not in states]
 
-            for new_state in new_branches:
+            for new_state in branches:
                 # Step 6: Apply value correspondences again if possible
                 new_state = self._apply_vcs(new_state)
-                transitions[current_state.uid].append(new_state.uid)
-                states[new_state.uid] = new_state
-                state_stack.append(new_state)
+
+                if current_state.uid != new_state.uid:
+                    transitions[current_state.uid].append(new_state.uid)
+
+                if new_state.uid not in states:
+                    states[new_state.uid] = new_state
+                    state_stack.append(new_state)
 
                 if verbosity > 1:
-                    print("{:<27} --({})-->   {}".format(current_state.readable_id, rule, new_state.readable_id))
+                    print("{:<27} ---->   {}".format(current_state.readable_id, new_state.readable_id))
 
         self._print_state_table_header(verbosity, states)
 
